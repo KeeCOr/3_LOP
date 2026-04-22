@@ -13,7 +13,7 @@
   },
   "build": {
     "appId": "com.stoic.lop",
-    "productName": "Land of Power",
+    "productName": "Lord of Poly",
     "directories": {
       "output": "dist"
     },

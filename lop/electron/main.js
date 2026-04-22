@@ -9,7 +9,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    title: 'Land of Power',
+    title: 'Lord of Poly',
     autoHideMenuBar: true,
   });
 

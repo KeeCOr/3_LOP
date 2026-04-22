@@ -5,30 +5,19 @@ import { CHARACTERS } from '@/lib/gameData';
 
 interface Props { onStart: (char: CharacterType, diff: Difficulty) => void; }
 
+const CHARACTER_TYPES = Object.keys(CHARACTERS) as CharacterType[];
+
 export default function StartScreen({ onStart }: Props) {
-  const [char, setChar] = useState<CharacterType>('general');
   const [diff, setDiff] = useState<Difficulty>('normal');
-  const chars = Object.entries(CHARACTERS) as [CharacterType, typeof CHARACTERS[CharacterType]][];
+
+  function handleStart() {
+    const randomChar = CHARACTER_TYPES[Math.floor(Math.random() * CHARACTER_TYPES.length)];
+    onStart(randomChar, diff);
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center gap-8 p-8">
-      <h1 className="text-4xl font-bold text-yellow-400">⚔️ Land of Power</h1>
-
-      <div>
-        <h2 className="text-lg font-semibold text-gray-300 mb-3 text-center">캐릭터 선택</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {chars.map(([type, data]) => (
-            <button key={type} onClick={() => setChar(type)}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${char === type ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-700 hover:border-gray-500'}`}>
-              <div className="font-bold">{data.name}</div>
-              <div className="text-xs text-gray-400 mt-1">{data.description}</div>
-              <div className="text-xs text-gray-500 mt-2">
-                공격 {data.attack}× | 방어 {data.defense}× | 병력 {data.maxTroops}명
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+      <h1 className="text-4xl font-bold text-yellow-400">⚔️ Lord of Poly</h1>
 
       <div>
         <h2 className="text-lg font-semibold text-gray-300 mb-3 text-center">난이도</h2>
@@ -42,7 +31,7 @@ export default function StartScreen({ onStart }: Props) {
         </div>
       </div>
 
-      <button onClick={() => onStart(char, diff)}
+      <button onClick={handleStart}
         className="mt-4 px-12 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-lg transition-colors">
         게임 시작
       </button>
