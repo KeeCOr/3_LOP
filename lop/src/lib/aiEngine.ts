@@ -46,9 +46,6 @@ export function getAiAction(state: GameState): GameAction {
       return { type: 'CHOOSE_PAY_TOLL', tileId };
     }
 
-    case 'battle':
-      return { type: 'BATTLE_FINISH' };
-
     case 'deploy': {
       const tileId = state.activeDeployTileId!;
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;

@@ -24,8 +24,14 @@ function GameWithState({ initialState, onRestart }: { initialState: ReturnType<t
   const aiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (state.phase !== 'board' || state.currentTurn !== 'ai') return;
-    if (state.turnPhase === 'end_turn') { dispatch({ type: 'END_TURN' }); return; }
+    if (state.phase !== 'board') return;
+    if (state.turnPhase === 'end_turn') {
+      const delay = state.currentTurn === 'player' ? 800 : 200;
+      aiTimerRef.current = setTimeout(() => dispatch({ type: 'END_TURN' }), delay);
+      return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
+    }
+    if (state.currentTurn !== 'ai') return;
+    if (state.turnPhase === 'battle') return;
     aiTimerRef.current = setTimeout(() => dispatch(getAiAction(state)), 800);
     return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
   }, [state]);
