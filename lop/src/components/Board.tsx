@@ -32,6 +32,11 @@ export default function Board({ state, dispatch }: Props) {
               onClick={() => {}} />
           );
         })}
+        {state.turnPhase === 'battle' && state.activeBattle && (
+          <div style={{ gridRow: '2 / span 2', gridColumn: '2 / span 3' }}>
+            <BattleModal state={state} dispatch={dispatch} />
+          </div>
+        )}
       </div>
 
       <div className={`text-center font-bold ${isPlayerTurn ? 'text-blue-400' : 'text-red-400'}`}>
@@ -41,11 +46,11 @@ export default function Board({ state, dispatch }: Props) {
       {isPlayerTurn && state.turnPhase === 'roll' && <DiceRoller result={state.diceResult} onRoll={() => dispatch({ type: 'ROLL_DICE' })} />}
       {isPlayerTurn && state.turnPhase === 'select_piece' && <PieceSelector state={state} dispatch={dispatch} />}
       {isPlayerTurn && state.turnPhase === 'tile_event' && state.activeTileAction !== null && <TileActionModal state={state} dispatch={dispatch} />}
-      {state.turnPhase === 'battle' && state.activeBattle && <BattleModal state={state} dispatch={dispatch} />}
       {state.turnPhase === 'deploy' && state.activeDeployTileId !== null && <DeployModal state={state} dispatch={dispatch} />}
       {isPlayerTurn && state.turnPhase === 'build' && <BuildModal state={state} dispatch={dispatch} />}
       {isPlayerTurn && state.turnPhase === 'shop' && <ShopModal state={state} dispatch={dispatch} />}
       {state.turnPhase === 'event_card' && state.activeEvent && <EventModal state={state} dispatch={dispatch} />}
+
 
       <div className="bg-gray-900 rounded p-3 max-h-32 overflow-y-auto text-xs text-gray-400">
         {[...state.log].reverse().slice(0, 10).map((l, i) => <div key={i}>{l}</div>)}
