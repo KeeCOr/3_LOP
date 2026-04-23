@@ -36,6 +36,12 @@ export default function TileActionModal({ state, dispatch }: Props) {
               💰 골드로 구매 ({landCost}골드)
             </button>
           )}
+          {isNeutral && (
+            <button onClick={() => dispatch({ type: 'CHOOSE_PASS' })}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold">
+              🚶 그냥 지나가기
+            </button>
+          )}
           {isEnemy && (
             <button onClick={() => dispatch({ type: 'CHOOSE_PAY_TOLL', tileId })}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold">

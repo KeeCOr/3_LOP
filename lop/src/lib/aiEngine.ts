@@ -28,12 +28,14 @@ export function getAiAction(state: GameState): GameAction {
 
       if (tile.owner === 'neutral' || tile.owner === null) {
         if (difficulty === 'easy') {
+          if (Math.random() < 0.3) return { type: 'CHOOSE_PASS' };
           return Math.random() > 0.5 ? { type: 'CHOOSE_FIGHT', tileId } : { type: 'CHOOSE_BUY_LAND', tileId };
         }
         const cost = tile.landPrice || tile.troops * 80;
+        if (ai.gold < cost && piece.troops <= tile.troops) return { type: 'CHOOSE_PASS' };
         if (piece.troops > tile.troops * 1.3) return { type: 'CHOOSE_FIGHT', tileId };
         if (ai.gold >= cost) return { type: 'CHOOSE_BUY_LAND', tileId };
-        return { type: 'CHOOSE_FIGHT', tileId };
+        return { type: 'CHOOSE_PASS' };
       }
 
       if (tile.owner === 'player') {
@@ -46,6 +48,21 @@ export function getAiAction(state: GameState): GameAction {
       return { type: 'CHOOSE_PAY_TOLL', tileId };
     }
 
+    case 'forced_sell': {
+      const tileId = state.activeTileAction!;
+      const tile = state.tiles.find(t => t.id === tileId)!;
+      const opponent = state.currentTurn === 'ai' ? 'player' : 'ai';
+      const tollDouble = state[opponent].tollDoubleLaps > 0;
+      const toll = getToll(tile, tollDouble);
+      if (ai.gold < toll) {
+        const ownedLands = state.tiles
+          .filter(t => t.owner === 'ai' && t.type === 'land')
+          .sort((a, b) => a.landPrice - b.landPrice);
+        if (ownedLands.length > 0) return { type: 'SELL_LAND', tileId: ownedLands[0].id };
+      }
+      return { type: 'CONFIRM_FORCED_SELL' };
+    }
+
     case 'deploy': {
       const tileId = state.activeDeployTileId!;
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
@@ -56,8 +73,12 @@ export function getAiAction(state: GameState): GameAction {
     case 'build': {
       const tileId = state.activeTileAction!;
       const tile = state.tiles.find(t => t.id === tileId)!;
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
+      const maxTroops = CHARACTERS[piece.characterType].maxTroops;
+      if (tile.troops > 0 && piece.troops < maxTroops * 0.7) {
+        return { type: 'COLLECT_TROOPS', tileId };
+      }
       if (difficulty === 'easy') return { type: 'SKIP_BUILD' };
-
       if (ai.gold < 300) return { type: 'SKIP_BUILD' };
       if (ai.gold < 600) {
         const cost = getBuildCost(tile, 'barracks');

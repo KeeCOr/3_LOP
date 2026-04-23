@@ -18,10 +18,11 @@ function createInitialTiles(): Tile[] {
     const range = neutralTroopRanges[i];
     const troops = range ? Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0] : 0;
     const landPrice = troops * 80;
+    const startOwner = i === PLAYER_START ? 'player' : i === AI_START ? 'ai' : null;
     return {
       id: i,
       type: LAND_INDICES.includes(i) ? 'land' : i === 0 ? 'start_p' : i === 7 ? 'start_e' : i === 3 ? 'shop' : i === 12 ? 'tax' : i === 5 ? 'chance' : 'community',
-      owner: troops > 0 ? 'neutral' : null,
+      owner: startOwner ?? (troops > 0 ? 'neutral' : null),
       troops,
       building: null,
       buildingLevel: 0,
@@ -58,6 +59,10 @@ export type GameAction =
   | { type: 'CHOOSE_FIGHT'; tileId: number }
   | { type: 'CHOOSE_BUY_LAND'; tileId: number }
   | { type: 'CHOOSE_PAY_TOLL'; tileId: number }
+  | { type: 'CHOOSE_PASS' }
+  | { type: 'SELL_LAND'; tileId: number }
+  | { type: 'CONFIRM_FORCED_SELL' }
+  | { type: 'COLLECT_TROOPS'; tileId: number }
   | { type: 'BATTLE_NEXT_ROUND' }
   | { type: 'BATTLE_FINISH' }
   | { type: 'DEPLOY_TROOPS'; tileId: number; amount: number }
@@ -107,7 +112,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...newState,
           [owner]: { ...newState[owner], gold: newState[owner].gold + LAP_GOLD_BONUS + lapIncome },
           pieces: newState.pieces.map(p => p.id === piece.id ? { ...p, troops: Math.min(maxTroops, p.troops + LAP_TROOP_BONUS + lapTroops) } : p),
-          log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 병력 +${LAP_TROOP_BONUS + lapTroops}`],
+          tiles: newState.tiles.map(t => {
+            if (t.owner !== owner || t.type !== 'land') return t;
+            const replenish = 1 + (t.building === 'barracks' ? t.buildingLevel : 0);
+            return { ...t, troops: t.troops + replenish };
+          }),
+          log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 병력 +${LAP_TROOP_BONUS + lapTroops}, 영토 병력 보강`],
         };
       }
 
@@ -191,6 +201,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const exempt = state[owner].tollExemptTurns > 0;
       const tollDouble = state[opponent].tollDoubleLaps > 0;
       const toll = exempt ? 0 : getToll(tile, tollDouble);
+      if (!exempt && state[owner].gold < toll) {
+        const ownedLands = state.tiles.filter(t => t.owner === owner && t.type === 'land');
+        if (ownedLands.length > 0) {
+          return {
+            ...state,
+            activeTileAction: action.tileId,
+            turnPhase: 'forced_sell' as const,
+            log: [...state.log, `통행세 ${toll}골드 부족! 보유 땅을 팔아야 합니다.`],
+          };
+        }
+      }
       let newState = {
         ...state,
         [owner]: { ...state[owner], gold: state[owner].gold - toll, tollExemptTurns: Math.max(0, state[owner].tollExemptTurns - 1) },
@@ -200,6 +221,59 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         log: [...state.log, `통행세 ${toll}골드 납부`],
       };
       return checkBankruptcy(newState);
+    }
+
+    case 'CHOOSE_PASS': {
+      return { ...state, activeTileAction: null, turnPhase: 'end_turn' };
+    }
+
+    case 'SELL_LAND': {
+      const tile = state.tiles.find(t => t.id === action.tileId)!;
+      const owner = state.currentTurn;
+      const sellPrice = Math.floor(tile.landPrice * 0.6);
+      return {
+        ...state,
+        [owner]: { ...state[owner], gold: state[owner].gold + sellPrice },
+        tiles: state.tiles.map(t => t.id === action.tileId
+          ? { ...t, owner: 'neutral' as const, building: null, buildingLevel: 0 }
+          : t),
+        log: [...state.log, `${owner === 'player' ? '플레이어' : 'AI'} ${action.tileId}번 땅 매각 (+${sellPrice}골드)`],
+      };
+    }
+
+    case 'CONFIRM_FORCED_SELL': {
+      const tileId = state.activeTileAction!;
+      const tile = state.tiles.find(t => t.id === tileId)!;
+      const owner = state.currentTurn;
+      const opponent = owner === 'player' ? 'ai' : 'player';
+      const tollDouble = state[opponent].tollDoubleLaps > 0;
+      const toll = getToll(tile, tollDouble);
+      let newState = {
+        ...state,
+        [owner]: { ...state[owner], gold: state[owner].gold - toll },
+        [opponent]: { ...state[opponent], gold: state[opponent].gold + toll },
+        activeTileAction: null,
+        turnPhase: 'end_turn' as const,
+        log: [...state.log, `통행세 ${toll}골드 납부 완료`],
+      };
+      return checkBankruptcy(newState);
+    }
+
+    case 'COLLECT_TROOPS': {
+      const tile = state.tiles.find(t => t.id === action.tileId)!;
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
+      const owner = state.currentTurn;
+      const maxTroops = CHARACTERS[piece.characterType].maxTroops + piece.equipment.reduce((a, e) => a + e.commandBonus, 0);
+      const canCollect = Math.min(tile.troops, maxTroops - piece.troops);
+      if (canCollect <= 0) return { ...state, activeTileAction: null, turnPhase: 'end_turn' };
+      return {
+        ...state,
+        pieces: state.pieces.map(p => p.id === piece.id ? { ...p, troops: p.troops + canCollect } : p),
+        tiles: state.tiles.map(t => t.id === action.tileId ? { ...t, troops: t.troops - canCollect } : t),
+        activeTileAction: null,
+        turnPhase: 'end_turn' as const,
+        log: [...state.log, `${owner === 'player' ? '플레이어' : 'AI'} ${action.tileId}번 땅 병력 ${canCollect}명 징집`],
+      };
     }
 
     case 'BUILD': {
@@ -291,8 +365,13 @@ function handleTileLanding(state: GameState, tileId: number, pieceId: string): G
 
   switch (tile.type) {
     case 'start_p':
+      return owner === 'player'
+        ? { ...state, turnPhase: 'shop' }
+        : { ...state, turnPhase: 'end_turn' };
     case 'start_e':
-      return { ...state, turnPhase: 'end_turn' };
+      return owner === 'ai'
+        ? { ...state, turnPhase: 'shop' }
+        : { ...state, turnPhase: 'end_turn' };
 
     case 'land': {
       if (tile.owner === null || tile.owner === 'neutral') {

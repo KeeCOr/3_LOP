@@ -8,6 +8,7 @@ export type TurnPhase =
   | 'build'
   | 'shop'
   | 'event_card'
+  | 'forced_sell'
   | 'end_turn';
 
 export type TileType = 'start_p' | 'start_e' | 'land' | 'shop' | 'tax' | 'chance' | 'community';

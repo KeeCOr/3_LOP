@@ -40,8 +40,14 @@ export default function BuildModal({ state, dispatch }: Props) {
             );
           })}
         </div>
+        {tile.troops > 0 && (
+          <button onClick={() => dispatch({ type: 'COLLECT_TROOPS', tileId })}
+            className="w-full py-2 bg-green-700 hover:bg-green-600 rounded-lg font-bold mb-2">
+            ⚔️ 병력 징집 ({tile.troops}명 수령)
+          </button>
+        )}
         <button onClick={() => dispatch({ type: 'SKIP_BUILD' })}
-          className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg">건설 안함</button>
+          className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg">그냥 지나가기</button>
       </div>
     </div>
   );

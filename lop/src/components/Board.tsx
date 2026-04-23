@@ -13,6 +13,7 @@ import DeployModal from './DeployModal';
 import BuildModal from './BuildModal';
 import ShopModal from './ShopModal';
 import EventModal from './EventModal';
+import ForcedSellModal from './ForcedSellModal';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -90,6 +91,7 @@ export default function Board({ state, dispatch }: Props) {
       {!anim && isPlayerTurn && state.turnPhase === 'build' && <BuildModal state={state} dispatch={dispatch} />}
       {!anim && isPlayerTurn && state.turnPhase === 'shop' && <ShopModal state={state} dispatch={dispatch} />}
       {!anim && state.turnPhase === 'event_card' && state.activeEvent && <EventModal state={state} dispatch={dispatch} />}
+      {state.turnPhase === 'forced_sell' && state.activeTileAction !== null && <ForcedSellModal state={state} dispatch={dispatch} />}
 
       <div className="bg-gray-900 rounded p-3 max-h-32 overflow-y-auto text-xs text-gray-400">
         {[...state.log].reverse().slice(0, 10).map((l, i) => <div key={i}>{l}</div>)}
