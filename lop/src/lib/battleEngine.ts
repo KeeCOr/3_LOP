@@ -1,4 +1,17 @@
-import type { BattleState, BattleRound } from './gameTypes';
+import type { BattleState, BattleRound, TroopComp } from './gameTypes';
+import { TROOP_DATA } from './gameData';
+
+export function compAttackMod(comp: TroopComp, total: number): number {
+  if (total === 0) return 1;
+  const sum = Object.entries(comp).reduce((s, [t, n]) => s + (TROOP_DATA[t as keyof typeof TROOP_DATA].attack * (n ?? 0)), 0);
+  return sum / total;
+}
+
+export function compDefenseMod(comp: TroopComp, total: number): number {
+  if (total === 0) return 1;
+  const sum = Object.entries(comp).reduce((s, [t, n]) => s + (TROOP_DATA[t as keyof typeof TROOP_DATA].defense * (n ?? 0)), 0);
+  return sum / total;
+}
 
 export const DAMAGE_RATE = 0.35;
 
@@ -50,16 +63,32 @@ export function runFullBattle(initial: BattleState): BattleState {
   return state;
 }
 
-export function getBattleAttack(piece: { characterType: string; equipment: { attackBonus: number }[] }, buildingAttackBonus = 1): number {
+export function getBattleAttack(
+  piece: { characterType: string; equipment: { attackBonus: number }[]; troops: number; composition: TroopComp },
+  buildingAttackBonus = 1
+): number {
   const charData = { general: 1.3, knight: 1.1, merchant: 0.9, scout: 1.0 } as Record<string, number>;
   const base = charData[piece.characterType] ?? 1.0;
   const equipBonus = piece.equipment.reduce((acc, e) => acc * e.attackBonus, 1);
-  return base * equipBonus * buildingAttackBonus;
+  const compMod = compAttackMod(piece.composition, piece.troops);
+  return base * equipBonus * compMod * buildingAttackBonus;
 }
 
-export function getBattleDefense(piece: { characterType: string; equipment: { defenseBonus: number }[] }, buildingDefenseBonus = 1): number {
+export function getBattleDefense(
+  piece: { characterType: string; equipment: { defenseBonus: number }[]; troops: number; composition: TroopComp },
+  buildingDefenseBonus = 1
+): number {
   const charData = { general: 0.8, knight: 1.2, merchant: 0.9, scout: 1.0 } as Record<string, number>;
   const base = charData[piece.characterType] ?? 1.0;
   const equipBonus = piece.equipment.reduce((acc, e) => acc * e.defenseBonus, 1);
-  return base * equipBonus * buildingDefenseBonus;
+  const compMod = compDefenseMod(piece.composition, piece.troops);
+  return base * equipBonus * compMod * buildingDefenseBonus;
+}
+
+export function getGarrisonAttack(garrison: TroopComp, total: number, buildingBonus = 1): number {
+  return compAttackMod(garrison, total) * buildingBonus;
+}
+
+export function getGarrisonDefense(garrison: TroopComp, total: number, buildingBonus = 1): number {
+  return compDefenseMod(garrison, total) * buildingBonus;
 }

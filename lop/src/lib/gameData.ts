@@ -1,4 +1,13 @@
-import type { CharacterType, Equipment, EventCard, BuildingType } from './gameTypes';
+import type { CharacterType, Equipment, EventCard, BuildingType, TroopType } from './gameTypes';
+
+export const TROOP_DATA: Record<TroopType, {
+  name: string; emoji: string; attack: number; defense: number; price: number; desc: string;
+}> = {
+  infantry: { name: '보병', emoji: '🗡️', attack: 1.0, defense: 1.0, price: 50,  desc: '균형 잡힌 기본 병종' },
+  archer:   { name: '궁병', emoji: '🏹', attack: 1.5, defense: 0.6, price: 80,  desc: '원거리 고공격, 근접 취약' },
+  cavalry:  { name: '기병', emoji: '🐎', attack: 1.4, defense: 0.7, price: 120, desc: '강력한 돌격력, 고비용' },
+  spearman: { name: '창병', emoji: '🔱', attack: 0.6, defense: 1.6, price: 70,  desc: '철통 수비, 공격 취약' },
+};
 
 export const CHARACTERS: Record<CharacterType, {
   name: string;

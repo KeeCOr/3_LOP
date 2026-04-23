@@ -1,3 +1,6 @@
+export type TroopType = 'infantry' | 'archer' | 'cavalry' | 'spearman';
+export type TroopComp = Partial<Record<TroopType, number>>;
+
 export type GamePhase = 'start' | 'board' | 'gameover';
 export type TurnPhase =
   | 'roll'
@@ -36,6 +39,7 @@ export interface Piece {
   characterType: CharacterType;
   position: number;
   troops: number;
+  composition: TroopComp;
   equipment: Equipment[];
   startTileIndex: number;
 }
@@ -45,6 +49,7 @@ export interface Tile {
   type: TileType;
   owner: Owner;
   troops: number;
+  garrison: TroopComp;
   building: BuildingType | null;
   buildingLevel: number;
   landPrice: number;

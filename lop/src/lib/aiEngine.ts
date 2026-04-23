@@ -1,6 +1,6 @@
 import type { GameState } from './gameTypes';
 import type { GameAction } from './gameReducer';
-import { CHARACTERS } from './gameData';
+import { CHARACTERS, TROOP_DATA } from './gameData';
 import { getToll, getBuildCost } from './economyUtils';
 
 export function getAiAction(state: GameState): GameAction {
@@ -66,8 +66,19 @@ export function getAiAction(state: GameState): GameAction {
     case 'deploy': {
       const tileId = state.activeDeployTileId!;
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
-      const deployAmount = Math.min(piece.troops, Math.max(1, Math.floor(piece.troops * 0.3)));
-      return { type: 'DEPLOY_TROOPS', tileId, amount: deployAmount };
+      const deployRatio = 0.3;
+      const garrison: import('./gameTypes').TroopComp = {};
+      let totalDeployed = 0;
+      (Object.keys(piece.composition) as import('./gameTypes').TroopType[]).forEach(t => {
+        const n = piece.composition[t] ?? 0;
+        const d = Math.floor(n * deployRatio);
+        if (d > 0) { garrison[t] = d; totalDeployed += d; }
+      });
+      if (totalDeployed === 0) {
+        const firstType = (Object.keys(piece.composition) as import('./gameTypes').TroopType[]).find(t => (piece.composition[t] ?? 0) > 0);
+        if (firstType) { garrison[firstType] = 1; }
+      }
+      return { type: 'DEPLOY_TROOPS', tileId, garrison };
     }
 
     case 'build': {
@@ -94,9 +105,11 @@ export function getAiAction(state: GameState): GameAction {
 
     case 'shop': {
       const piece = state.pieces.find(p => p.id === state.selectedPieceId);
-      if (piece && piece.troops < 5 && ai.gold >= 250) {
-        const buyCount = Math.min(5, Math.floor(ai.gold / 50 / 2));
-        if (buyCount > 0) return { type: 'BUY_TROOPS', pieceId: piece.id, amount: buyCount };
+      if (piece && piece.troops < 8 && ai.gold >= 200) {
+        const troopType = difficulty === 'hard' ? 'spearman' : 'infantry';
+        const price = TROOP_DATA[troopType].price;
+        const buyCount = Math.min(5, Math.floor(ai.gold / price / 2));
+        if (buyCount > 0) return { type: 'BUY_TROOPS', pieceId: piece.id, troopType, amount: buyCount };
       }
       return { type: 'CLOSE_SHOP' };
     }
