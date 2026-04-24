@@ -1,12 +1,29 @@
-import type { GameState } from './gameTypes';
+import type { GameState, PlayerState, PlayerType } from './gameTypes';
 import type { GameAction } from './gameReducer';
 import { CHARACTERS, TROOP_DATA } from './gameData';
 import { getToll, getBuildCost } from './economyUtils';
 
+function getAiPS(state: GameState): PlayerState {
+  const id = state.currentTurn;
+  if (id === 'ai2') return state.ai2!;
+  if (id === 'ai3') return state.ai3!;
+  return state.ai;
+}
+
+function getOpponentPS(state: GameState, tileOwner: PlayerType): PlayerState {
+  if (tileOwner === 'ai2') return state.ai2!;
+  if (tileOwner === 'ai3') return state.ai3!;
+  if (tileOwner === 'player') return state.player;
+  return state.ai;
+}
+
 export function getAiAction(state: GameState): GameAction {
   const difficulty = state.difficulty;
-  const ai = state.ai;
-  const aiPieces = state.pieces.filter(p => p.owner === 'ai');
+  const ai = getAiPS(state);
+  const aiPieces = state.pieces.filter(p => p.owner === state.currentTurn);
+
+  // Clear lap bonus animation immediately for AI turns
+  if (state.lapBonusAnim) return { type: 'CLEAR_LAP_BONUS' };
 
   switch (state.turnPhase) {
     case 'roll':
@@ -38,9 +55,9 @@ export function getAiAction(state: GameState): GameAction {
         return { type: 'CHOOSE_PASS' };
       }
 
-      if (tile.owner === 'player') {
+      if (tile.owner !== state.currentTurn) {
         if (difficulty === 'easy') return { type: 'CHOOSE_PAY_TOLL', tileId };
-        const toll = getToll(tile);
+        const toll = getToll(tile, false, state.lapCount);
         if (piece.troops > tile.troops * 1.5 && ai.gold > toll * 2) return { type: 'CHOOSE_FIGHT', tileId };
         return { type: 'CHOOSE_PAY_TOLL', tileId };
       }
@@ -51,12 +68,13 @@ export function getAiAction(state: GameState): GameAction {
     case 'forced_sell': {
       const tileId = state.activeTileAction!;
       const tile = state.tiles.find(t => t.id === tileId)!;
-      const opponent = state.currentTurn === 'ai' ? 'player' : 'ai';
-      const tollDouble = state[opponent].tollDoubleLaps > 0;
-      const toll = getToll(tile, tollDouble);
+      const tileOwner = tile.owner;
+      const ownerPS = tileOwner && tileOwner !== 'neutral' ? getOpponentPS(state, tileOwner as PlayerType) : null;
+      const tollDouble = ownerPS ? ownerPS.tollDoubleLaps > 0 : false;
+      const toll = getToll(tile, tollDouble, state.lapCount);
       if (ai.gold < toll) {
         const ownedLands = state.tiles
-          .filter(t => t.owner === 'ai' && t.type === 'land')
+          .filter(t => t.owner === state.currentTurn && t.type === 'land')
           .sort((a, b) => a.landPrice - b.landPrice);
         if (ownedLands.length > 0) return { type: 'SELL_LAND', tileId: ownedLands[0].id };
       }
@@ -106,7 +124,7 @@ export function getAiAction(state: GameState): GameAction {
     case 'shop': {
       const piece = state.pieces.find(p => p.id === state.selectedPieceId);
       if (piece && piece.troops < 8 && ai.gold >= 200) {
-        const troopType = difficulty === 'hard' ? 'spearman' : 'infantry';
+        const troopType = difficulty === 'hard' ? 'spearman' : 'swordsman';
         const price = TROOP_DATA[troopType].price;
         const buyCount = Math.min(5, Math.floor(ai.gold / price / 2));
         if (buyCount > 0) return { type: 'BUY_TROOPS', pieceId: piece.id, troopType, amount: buyCount };
@@ -116,6 +134,17 @@ export function getAiAction(state: GameState): GameAction {
 
     case 'event_card':
       return { type: 'APPLY_EVENT_CARD' };
+
+    case 'mercenary': {
+      // AI buys mercenaries if gold is sufficient and troops are low
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId)
+        ?? state.pieces.find(p => p.owner === state.currentTurn);
+      const MERC_COST = 200;
+      if (piece && piece.troops < 8 && ai.gold >= MERC_COST * 2) {
+        return { type: 'BUY_MERCENARY' };
+      }
+      return { type: 'CLOSE_MERCENARY' };
+    }
 
     default:
       return { type: 'END_TURN' };

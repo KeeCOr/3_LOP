@@ -1,11 +1,16 @@
 import type { Tile } from './gameTypes';
 import { BUILDING_DATA, TAX_RATE } from './gameData';
 
-export function getToll(tile: Tile, tollDouble = false): number {
-  if (!tile.building || tile.buildingLevel === 0) return 50;
-  const data = BUILDING_DATA[tile.building];
-  const base = data.toll[tile.buildingLevel - 1];
-  return tollDouble ? base * 2 : base;
+export function getToll(tile: Tile, tollDouble = false, lapCount = 0): number {
+  const lapBonus = 1 + lapCount * 0.08; // +8% per global lap
+  let base: number;
+  if (tile.building && tile.buildingLevel > 0) {
+    base = BUILDING_DATA[tile.building].toll[tile.buildingLevel - 1];
+  } else {
+    base = tile.baseToll ?? 50;
+  }
+  const scaled = Math.round(base * lapBonus / 10) * 10;
+  return tollDouble ? scaled * 2 : scaled;
 }
 
 export function getLapIncome(tile: Tile): number {
