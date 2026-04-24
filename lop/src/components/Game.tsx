@@ -10,8 +10,8 @@ import GameOver from './GameOver';
 export default function Game() {
   const [gameState, setGameState] = useState<ReturnType<typeof createInitialState> | null>(null);
 
-  function handleStart(char: CharacterType, diff: Difficulty) {
-    const initial = createInitialState(char, diff);
+  function handleStart(char: CharacterType, diff: Difficulty, playerCount: 2 | 3 | 4) {
+    const initial = createInitialState(char, diff, playerCount);
     setGameState(initial);
   }
 
@@ -30,8 +30,11 @@ function GameWithState({ initialState, onRestart }: { initialState: ReturnType<t
       aiTimerRef.current = setTimeout(() => dispatch({ type: 'END_TURN' }), delay);
       return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
     }
-    if (state.currentTurn !== 'ai') return;
-    if (state.turnPhase === 'battle') return;
+    if (state.currentTurn === 'player') return;
+    if (state.turnPhase === 'battle') {
+      aiTimerRef.current = setTimeout(() => dispatch({ type: 'BATTLE_FINISH' }), 800);
+      return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
+    }
     aiTimerRef.current = setTimeout(() => dispatch(getAiAction(state)), 800);
     return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
   }, [state]);

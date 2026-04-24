@@ -1,18 +1,26 @@
 'use client';
-import type { GameState } from '@/lib/gameTypes';
+import type { GameState, PlayerType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { getToll } from '@/lib/economyUtils';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
+function getPS(state: GameState, id: PlayerType) {
+  if (id === 'player') return state.player;
+  if (id === 'ai') return state.ai;
+  if (id === 'ai2') return state.ai2!;
+  return state.ai3!;
+}
+
 export default function ForcedSellModal({ state, dispatch }: Props) {
   const owner = state.currentTurn;
-  const opponent = owner === 'player' ? 'ai' : 'player';
   const tileId = state.activeTileAction!;
   const tile = state.tiles.find(t => t.id === tileId)!;
-  const tollDouble = state[opponent].tollDoubleLaps > 0;
-  const toll = getToll(tile, tollDouble);
-  const gold = state[owner].gold;
+  const tileOwner = tile.owner;
+  const tileOwnerPS = tileOwner && tileOwner !== 'neutral' ? getPS(state, tileOwner as PlayerType) : null;
+  const tollDouble = tileOwnerPS ? tileOwnerPS.tollDoubleLaps > 0 : false;
+  const toll = getToll(tile, tollDouble, state.lapCount);
+  const gold = getPS(state, owner).gold;
   const ownedLands = state.tiles.filter(t => t.owner === owner && t.type === 'land');
   const canPay = gold >= toll;
 

@@ -1,6 +1,6 @@
 {
   "name": "lop",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "main": "electron/main.js",
   "private": true,
   "scripts": {
@@ -15,7 +15,7 @@
     "appId": "com.stoic.lop",
     "productName": "Lord of Poly",
     "directories": {
-      "output": "dist"
+      "output": "../releases"
     },
     "files": [
       "out/**/*",

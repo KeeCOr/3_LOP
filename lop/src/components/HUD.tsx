@@ -1,34 +1,63 @@
-import type { GameState } from '@/lib/gameTypes';
+import type { GameState, PlayerType } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
+import { FACTION_COLORS } from '@/lib/factionColors';
 
 export default function HUD({ state }: { state: GameState }) {
-  const playerPieces = state.pieces.filter(p => p.owner === 'player');
-  const aiPieces = state.pieces.filter(p => p.owner === 'ai');
-  const playerLands = state.tiles.filter(t => t.owner === 'player').length;
-  const aiLands = state.tiles.filter(t => t.owner === 'ai').length;
+  const activePlayers: PlayerType[] = ['player', 'ai'];
+  if (state.playerCount >= 3) activePlayers.push('ai2');
+  if (state.playerCount >= 4) activePlayers.push('ai3');
+
+  function getPS(id: PlayerType) {
+    if (id === 'player') return state.player;
+    if (id === 'ai') return state.ai;
+    if (id === 'ai2') return state.ai2!;
+    return state.ai3!;
+  }
 
   return (
-    <div className="grid grid-cols-2 gap-4 p-4 bg-gray-900 rounded-lg">
-      <div className="text-blue-300">
-        <div className="font-bold text-blue-400">👤 플레이어</div>
-        <div>💰 {state.player.gold}골드</div>
-        <div>🏠 영토 {playerLands}칸</div>
-        {playerPieces.map(p => (
-          <div key={p.id} className="text-sm text-gray-400">
-            {CHARACTERS[p.characterType].name} ⚔️{p.troops}명
+    <div className="flex border-b-2 border-gray-800 bg-gray-950">
+      {activePlayers.map(id => {
+        const ps = getPS(id);
+        const pieces = state.pieces.filter(p => p.owner === id && p.troops > 0);
+        const lands = state.tiles.filter(t => t.owner === id).length;
+        const fc = FACTION_COLORS[id];
+        const isCurrent = state.currentTurn === id;
+
+        return (
+          <div key={id}
+            className={`flex-1 px-2 py-1.5 border-r border-gray-800 last:border-r-0 transition-all duration-300
+              ${isCurrent
+                ? `${fc.bg} border-t-4 ${fc.border} brightness-125`
+                : 'border-t-4 border-transparent opacity-50'}`}>
+            {/* Name row */}
+            <div className="flex items-center gap-1 mb-0.5">
+              {isCurrent
+                ? <span className={`text-xs font-black ${fc.textBright} animate-pulse`}>▶</span>
+                : <span className="text-xs text-transparent">▶</span>}
+              <span className={`text-xs font-bold ${isCurrent ? fc.textBright : fc.text}`}>
+                {ps.name}
+              </span>
+              {isCurrent && (
+                <span className={`ml-auto text-[9px] px-1 rounded font-bold ${fc.badge} text-white`}>
+                  턴
+                </span>
+              )}
+            </div>
+            {/* Stats row */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`font-bold ${isCurrent ? 'text-yellow-300' : 'text-yellow-600'}`}>
+                💰{ps.gold}
+              </span>
+              <span className={isCurrent ? 'text-gray-300' : 'text-gray-600'}>🏠{lands}</span>
+              {pieces.map(p => (
+                <span key={p.id} className={isCurrent ? fc.textBright : 'text-gray-600'}>
+                  {CHARACTERS[p.characterType].name[0]}⚔️{p.troops}
+                </span>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
-      <div className="text-red-300 text-right">
-        <div className="font-bold text-red-400">🤖 AI</div>
-        <div>💰 {state.ai.gold}골드</div>
-        <div>🏠 영토 {aiLands}칸</div>
-        {aiPieces.map(p => (
-          <div key={p.id} className="text-sm text-gray-400">
-            {CHARACTERS[p.characterType].name} ⚔️{p.troops}명
-          </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
