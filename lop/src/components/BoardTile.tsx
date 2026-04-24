@@ -13,6 +13,7 @@ const TILE_ICONS: Record<string, string> = {
 };
 
 const CAPTURABLE_TYPES = new Set(['land']);
+const HOME_TYPES = new Set(['start_p', 'start_e']);
 
 const NEUTRAL_BG = 'border-gray-600 bg-gray-900';
 const NULL_BG    = 'border-gray-800 bg-gray-950';
@@ -44,6 +45,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, onClick, o
   const def = TILE_DEFINITIONS.find(d => d.index === tile.id)!;
   const piecesHere = pieces.filter(p => p.position === tile.id);
   const isLand = CAPTURABLE_TYPES.has(tile.type);
+  const isHome = HOME_TYPES.has(tile.type);
 
   const garrisonEntries = (Object.entries(tile.garrison) as [TroopType, number][])
     .filter(([, n]) => (n ?? 0) > 0);
@@ -52,13 +54,14 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, onClick, o
     <div onClick={onClick}
       style={{ gridRow: def.gridRow, gridColumn: def.gridCol }}
       className={`relative flex flex-col items-center justify-center p-1 rounded-lg border-2 overflow-hidden cursor-pointer transition-all
-        ${isLand ? ownerStyle(tile.owner) : 'border-gray-700 bg-gray-900/60'}
+        ${isLand || isHome ? ownerStyle(tile.owner) : 'border-gray-700 bg-gray-900/60'}
+        ${isHome ? 'border-2' : ''}
         ${isActive  ? 'ring-2 ring-yellow-400 brightness-125 scale-[1.03]' : ''}
         ${isMoving  ? 'ring-2 ring-white brightness-150 scale-[1.03]' : ''}
         ${!isActive && !isMoving ? 'hover:brightness-110' : ''}`}>
 
       {/* Non-capturable overlay indicator */}
-      {!isLand && (
+      {!isLand && !isHome && (
         <div className="absolute top-0.5 right-0.5 text-[8px] text-gray-600 leading-none">🔒</div>
       )}
 
@@ -68,8 +71,8 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, onClick, o
         {def.label}
       </div>
 
-      {/* Toll display for land tiles */}
-      {isLand && tile.baseToll > 0 && (
+      {/* Toll display for land and home tiles */}
+      {(isLand || isHome) && tile.baseToll > 0 && (
         <div className="text-[9px] text-orange-400/80 leading-none">🏷️{tile.baseToll}g</div>
       )}
 

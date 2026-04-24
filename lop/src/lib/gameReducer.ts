@@ -87,16 +87,21 @@ const TIER_PRICE = { 1: 200, 2: 400, 3: 650 };
 const TIER_BASE_TOLL = { 1: 40, 2: 80, 3: 130 };
 const TIER_TROOP_RANGE: Record<1|2|3, [number,number]> = { 1: [3,6], 2: [5,9], 3: [7,12] };
 
+const START_INITIAL_TROOPS = 12;
+const START_BASE_TOLL = 200;
+
 function createInitialTiles(playerCount: 2 | 3 | 4 = 2): Tile[] {
   return Array.from({ length: 14 }, (_, i) => {
     const isAi2Start = playerCount >= 3 && i === AI2_START;
     const isAi3Start = playerCount >= 4 && i === AI3_START;
+    const isStartTile = i === PLAYER_START || i === AI_START || isAi2Start || isAi3Start;
     const tier = TILE_TIER[i];
     const range = tier ? TIER_TROOP_RANGE[tier] : null;
     const hasTroops = !!range && !isAi2Start && !isAi3Start;
-    const troops = hasTroops ? Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0] : 0;
+    const troops = isStartTile ? START_INITIAL_TROOPS
+      : hasTroops ? Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0] : 0;
     const landPrice = tier ? TIER_PRICE[tier] : 0;
-    const baseToll = tier ? TIER_BASE_TOLL[tier] : 0;
+    const baseToll = isStartTile ? START_BASE_TOLL : (tier ? TIER_BASE_TOLL[tier] : 0);
     const tileType: import('./gameTypes').TileType =
       LAND_INDICES.includes(i) ? 'land' :
       i === 0 ? 'start_p' :
@@ -108,16 +113,12 @@ function createInitialTiles(playerCount: 2 | 3 | 4 = 2): Tile[] {
       isAi2Start ? 'ai2' :
       isAi3Start ? 'ai3' :
       (troops > 0 ? 'neutral' : null);
+    const garrison = troops > 0
+      ? { spearman: Math.ceil(troops * 0.4), swordsman: Math.floor(troops * 0.6) }
+      : {};
     return {
-      id: i,
-      type: tileType,
-      owner: startOwner,
-      troops,
-      garrison: troops > 0 ? { spearman: Math.ceil(troops * 0.4), swordsman: Math.floor(troops * 0.6) } : {},
-      building: null,
-      buildingLevel: 0,
-      landPrice,
-      baseToll,
+      id: i, type: tileType, owner: startOwner, troops, garrison,
+      building: null, buildingLevel: 0, landPrice, baseToll,
     } as Tile;
   });
 }
@@ -327,12 +328,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           }),
         };
 
-        // Per-land production: produce fixed amount of the garrison's dominant type
+        // Per-land production (includes start tiles as premium land)
         let totalTileProduction = 0;
         newState = {
           ...newState,
           tiles: newState.tiles.map(t => {
-            if (t.owner !== owner || t.type !== 'land' || t.troops === 0) return t;
+            if (t.owner !== owner || (t.type !== 'land' && t.type !== 'start_p' && t.type !== 'start_e') || t.troops === 0) return t;
             const produce = LAP_LAND_PRODUCTION + getLapTroops(t);
             totalTileProduction += produce;
             const dominant = dominantTroopType(t.garrison);
@@ -347,6 +348,39 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
         // Increment global lap count (raises tolls)
         newState = { ...newState, lapCount: newState.lapCount + 1 };
+      }
+
+      // Auto-collect from own tiles passed through (not the landing tile)
+      const prevPos = piece.position;
+      let totalCollected = 0;
+      let collectedComp: TroopComp = {};
+      const passedTileIds: Set<number> = new Set();
+      for (let i = 1; i < steps; i++) passedTileIds.add(nextPosition(prevPos, i));
+      for (const tileId of passedTileIds) {
+        const t = newState.tiles.find(tile => tile.id === tileId);
+        if (t && t.owner === owner && t.troops > 0) {
+          totalCollected += t.troops;
+          collectedComp = mergeComp(collectedComp, t.garrison);
+        }
+      }
+      if (totalCollected > 0) {
+        const maxTr = CHARACTERS[piece.characterType].maxTroops;
+        const canCollect = Math.min(totalCollected, maxTr - (newState.pieces.find(p => p.id === piece.id)?.troops ?? 0));
+        if (canCollect > 0) {
+          newState = {
+            ...newState,
+            pieces: newState.pieces.map(p => p.id === piece.id
+              ? { ...p, troops: p.troops + canCollect, composition: mergeComp(p.composition, scaleComp(collectedComp, canCollect)) }
+              : p
+            ),
+            tiles: newState.tiles.map(t =>
+              passedTileIds.has(t.id) && t.owner === owner && t.troops > 0
+                ? { ...t, troops: 0, garrison: {} }
+                : t
+            ),
+            log: [...newState.log, `이동 중 영토 통과 → ${canCollect}명 자동 징집`],
+          };
+        }
       }
 
       return handleTileLanding(newState, newPos, piece.id);
@@ -782,7 +816,7 @@ function handleTileLanding(state: GameState, tileId: number, _pieceId: string): 
   const owner = state.currentTurn;
 
   if (tile.type === 'start_p' || tile.type === 'start_e') {
-    if (tile.owner === owner) return { ...state, turnPhase: 'shop' };
+    if (tile.owner === owner) return { ...state, activeTileAction: tileId, turnPhase: 'shop' };
     if (tile.troops > 0 || (tile.owner && tile.owner !== 'neutral')) {
       return { ...state, activeTileAction: tileId, turnPhase: 'tile_event' };
     }

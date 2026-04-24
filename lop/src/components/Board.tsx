@@ -64,7 +64,6 @@ export default function Board({ state, dispatch }: Props) {
   const [goldAnims, setGoldAnims] = useState<GoldAnim[]>([]);
   const prevGoldRef = useRef<number>(state.player.gold);
   const [viewPieceId, setViewPieceId] = useState<string | null>(null);
-  const [showCollect, setShowCollect] = useState(false);
   const [infoTileId, setInfoTileId] = useState<number | null>(null);
   const [aiNotif, setAiNotif] = useState<string | null>(null);
   const [turnBanner, setTurnBanner] = useState<string | null>(null);
@@ -145,10 +144,6 @@ export default function Board({ state, dispatch }: Props) {
   const cardSlotUsable = isPlayerTurn && !['battle', 'start_deploy', 'event_card', 'shop', 'choose_move_tile', 'end_turn'].includes(state.turnPhase);
 
   const viewPiece = viewPieceId ? state.pieces.find(p => p.id === viewPieceId) : null;
-  const collectibleTiles = state.tiles.filter(t => t.owner === state.currentTurn && t.troops > 0);
-  const canShowCollect = isPlayerTurn && collectibleTiles.length > 0 &&
-    ['roll', 'select_piece', 'tile_event', 'build', 'deploy'].includes(state.turnPhase);
-  const canOpenShop = isPlayerTurn && ['roll', 'select_piece', 'tile_event'].includes(state.turnPhase);
 
   // Tile info data
   const infoTile = infoTileId !== null ? state.tiles.find(t => t.id === infoTileId) : null;
@@ -220,33 +215,84 @@ export default function Board({ state, dispatch }: Props) {
 
       {/* Tile info popup — fixed bottom-left */}
       {infoTile && infoTileDef && (
-        <div className="fixed bottom-20 left-2 bg-gray-900 border border-gray-600 rounded-xl p-3 z-20 min-w-[190px] shadow-2xl"
+        <div className="fixed bottom-20 left-2 bg-gray-900 border border-gray-600 rounded-xl p-3 z-20 min-w-[210px] shadow-2xl"
           onClick={e => e.stopPropagation()}>
-          <div className="text-xs font-bold text-yellow-400 mb-1.5">{infoTileDef.label}</div>
-          {infoTile.type === 'land' && (
-            <div className="flex flex-col gap-1 text-xs text-gray-300">
-              <div>🏠 통행료: <span className="text-yellow-300 font-bold">{getToll(infoTile, false, state.lapCount)}골드</span></div>
-              <div>⚔️ 주둔 병력: <span className="font-bold">{infoTile.troops}명</span></div>
-              <div>🔄 한 바퀴 생산: <span className="text-green-300 font-bold">
-                {LAP_LAND_PRODUCTION + getLapTroops(infoTile)}명
-              </span></div>
-              {getLapIncome(infoTile) > 0 && (
-                <div>💰 한 바퀴 수입: <span className="text-yellow-300 font-bold">{getLapIncome(infoTile)}골드</span></div>
-              )}
-              {infoTile.building && (
-                <div>🏗️ 건물: <span className="text-purple-300 font-bold">
-                  {BUILDING_DATA[infoTile.building].name[infoTile.buildingLevel - 1]} Lv{infoTile.buildingLevel}
-                </span></div>
-              )}
-            </div>
-          )}
+          <div className="text-xs font-bold text-yellow-400 mb-2">{infoTileDef.label}</div>
+          {infoTile.type === 'land' && (() => {
+            const garrisonEntries = (Object.entries(infoTile.garrison) as [import('@/lib/gameTypes').TroopType, number][]).filter(([, n]) => (n ?? 0) > 0);
+            const lapTroops = getLapTroops(infoTile);
+            const totalLapProd = LAP_LAND_PRODUCTION + lapTroops;
+            return (
+              <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">🏠 통행료</span>
+                  <span className="text-yellow-300 font-bold">{getToll(infoTile, false, state.lapCount)}골드</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">🏷️ 구매가</span>
+                  <span className="text-white font-bold">{infoTile.landPrice}골드</span>
+                </div>
+                <div className="border-t border-gray-700 pt-1.5 mt-0.5">
+                  <div className="text-gray-400 mb-1">⚔️ 주둔 병력 <span className="text-white font-bold">{infoTile.troops}명</span></div>
+                  {garrisonEntries.length > 0 ? (
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 pl-1">
+                      {garrisonEntries.map(([t, n]) => (
+                        <span key={t} className="text-gray-300">
+                          {TROOP_DATA[t].emoji}{TROOP_DATA[t].name} {n}명
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-600 pl-1">없음</div>
+                  )}
+                </div>
+                <div className="border-t border-gray-700 pt-1.5">
+                  <div className="text-gray-400 mb-1">🔄 한 바퀴 생산 <span className="text-green-300 font-bold">{totalLapProd}명</span></div>
+                  <div className="flex flex-wrap gap-x-2 pl-1">
+                    <span className="text-gray-300">{TROOP_DATA.swordsman.emoji}{TROOP_DATA.swordsman.name} {LAP_LAND_PRODUCTION}명</span>
+                    {lapTroops > 0 && <span className="text-gray-300">{TROOP_DATA.spearman.emoji}{TROOP_DATA.spearman.name} {lapTroops}명</span>}
+                  </div>
+                </div>
+                {getLapIncome(infoTile) > 0 && (
+                  <div className="flex justify-between border-t border-gray-700 pt-1.5">
+                    <span className="text-gray-400">💰 한 바퀴 수입</span>
+                    <span className="text-yellow-300 font-bold">{getLapIncome(infoTile)}골드</span>
+                  </div>
+                )}
+                {infoTile.building && (
+                  <div className="flex justify-between border-t border-gray-700 pt-1.5">
+                    <span className="text-gray-400">🏗️ 건물</span>
+                    <span className="text-purple-300 font-bold">
+                      {BUILDING_DATA[infoTile.building].name[infoTile.buildingLevel - 1]} Lv{infoTile.buildingLevel}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {infoTile.type === 'chance' && (
-            <div className="text-xs text-yellow-400">찬스 카드 칸</div>
+            <div className="text-xs text-yellow-400">🎲 찬스 카드 칸</div>
+          )}
+          {infoTile.type === 'mercenary' && (
+            <div className="text-xs text-orange-400">⚔️ 용병소 — 200골드로 랜덤 병력 고용</div>
           )}
           {(infoTile.type === 'start_p' || infoTile.type === 'start_e') && (
-            <div className="text-xs text-gray-400">출발 / 기지 칸</div>
+            <div className="flex flex-col gap-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-gray-400">🏠 통행세</span>
+                <span className="text-orange-300 font-bold">{getToll(infoTile, false, state.lapCount)}골드</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">⚔️ 주둔 병력</span>
+                <span className="text-white font-bold">{infoTile.troops}명</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">🔄 랩 생산</span>
+                <span className="text-green-300 font-bold">{LAP_LAND_PRODUCTION + getLapTroops(infoTile)}명</span>
+              </div>
+            </div>
           )}
-          <button className="mt-1.5 text-[10px] text-gray-500 hover:text-gray-400"
+          <button className="mt-2 text-[10px] text-gray-500 hover:text-gray-400"
             onClick={() => setInfoTileId(null)}>✕ 닫기</button>
         </div>
       )}
@@ -287,46 +333,7 @@ export default function Board({ state, dispatch }: Props) {
           {!isPlayerTurn && state.turnPhase === 'deploy' && (
             <div className="text-sm text-gray-500">배치 중...</div>
           )}
-
-          <div className="ml-auto flex items-center gap-1.5 shrink-0">
-            {canOpenShop && (
-              <button
-                onClick={() => dispatch({ type: 'OPEN_SHOP' })}
-                className="px-2 py-1 bg-purple-900/60 hover:bg-purple-800/80 border border-purple-700 rounded text-xs text-purple-300 font-bold">
-                🏪 상점
-              </button>
-            )}
-            {canShowCollect && !showCollect && (
-              <button
-                onClick={() => setShowCollect(true)}
-                className="px-2 py-1 bg-green-900/60 hover:bg-green-800/80 border border-green-700 rounded text-xs text-green-300 font-bold">
-                ⚔️ 징집
-              </button>
-            )}
-          </div>
         </div>
-
-        {/* Collect troops panel */}
-        {showCollect && canShowCollect && (
-          <div className="mt-1.5 bg-gray-900 border border-green-700 rounded-lg px-3 py-2 flex flex-wrap gap-2 items-center">
-            <span className="text-xs text-green-400 font-bold shrink-0">징집할 영토:</span>
-            {collectibleTiles.map(t => {
-              const def = TILE_DEFINITIONS.find(d => d.index === t.id);
-              return (
-                <button key={t.id}
-                  onClick={() => {
-                    dispatch({ type: 'COLLECT_TROOPS', tileId: t.id });
-                    setShowCollect(false);
-                  }}
-                  className="px-2 py-1 bg-green-900/60 hover:bg-green-700/80 border border-green-600 rounded text-xs text-green-200">
-                  {def?.label ?? `${t.id}번`} ({t.troops}명)
-                </button>
-              );
-            })}
-            <button onClick={() => setShowCollect(false)}
-              className="ml-auto text-xs text-gray-500 hover:text-gray-400">취소</button>
-          </div>
-        )}
       </div>
 
       {/* Log */}
@@ -336,29 +343,38 @@ export default function Board({ state, dispatch }: Props) {
         ))}
       </div>
 
-      {/* Card slot — fixed horizontal strip at bottom */}
-      {state.player.cardSlot.length > 0 && (
-        <div className="fixed bottom-1 left-0 right-0 flex flex-row gap-1.5 justify-center items-end z-10 px-2 pointer-events-none">
-          {state.player.cardSlot.map(card => (
-            <button
-              key={card.id}
-              onClick={() => cardSlotUsable && dispatch({ type: 'USE_EVENT_CARD', cardId: card.id })}
-              disabled={!cardSlotUsable}
-              title={card.text}
-              style={{ pointerEvents: 'auto' }}
-              className={`flex flex-col items-center px-2 py-1.5 rounded-xl border-2 shadow-xl min-w-[68px] max-w-[90px] transition-all
-                border-yellow-500 bg-yellow-950/95 text-yellow-300
-                ${cardSlotUsable ? 'hover:scale-105 hover:-translate-y-1 hover:brightness-125 cursor-pointer' : 'opacity-40 cursor-not-allowed'}
-              `}
-            >
-              <div className="text-sm font-black leading-none">{cardEffectLabel(card)}</div>
-              <div className="text-[9px] text-yellow-500 mt-0.5 text-center leading-tight line-clamp-2 max-w-full">
-                {card.text.length > 18 ? card.text.slice(0, 17) + '…' : card.text}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Card area — fixed right panel */}
+      <div className="fixed right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-10 pointer-events-none" style={{ maxHeight: '70vh' }}>
+        {state.player.cardSlot.length > 0 && (
+          <>
+            <div className="text-[9px] text-gray-500 text-center font-bold">보유 카드</div>
+            {state.player.cardSlot.map(card => (
+              <button
+                key={card.id}
+                onClick={() => cardSlotUsable && dispatch({ type: 'USE_EVENT_CARD', cardId: card.id })}
+                disabled={!cardSlotUsable}
+                title={card.text}
+                style={{ pointerEvents: 'auto' }}
+                className={`flex flex-col items-center px-2 py-2 rounded-xl border-2 shadow-xl w-[72px] transition-all
+                  border-yellow-500 bg-yellow-950/95 text-yellow-300
+                  ${cardSlotUsable ? 'hover:scale-105 hover:brightness-125 cursor-pointer' : 'opacity-40 cursor-not-allowed'}
+                `}
+              >
+                <div className="text-base font-black leading-none mb-0.5">{cardEffectLabel(card)}</div>
+                <div className="text-[8px] text-yellow-600 text-center leading-tight w-full">
+                  {card.text.length > 14 ? card.text.slice(0, 13) + '…' : card.text}
+                </div>
+              </button>
+            ))}
+          </>
+        )}
+        {state.player.cardSlot.length === 0 && (
+          <div className="flex flex-col items-center gap-1 opacity-25">
+            <div className="text-[9px] text-gray-500 text-center font-bold">보유 카드</div>
+            <div className="w-[72px] h-[52px] rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 text-xs">없음</div>
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
       {state.lapBonusAnim && <LapBonusModal state={state} dispatch={dispatch} />}

@@ -9,14 +9,12 @@ interface Props {
   onRoll: () => void;
 }
 
-const FACES = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+const FACES = ['', '⚀', '⚁', '⚂', '⚃'];
 
-function DieFace({ value, rolling, big }: { value: number | null; rolling: boolean; big: boolean }) {
+function DieFace({ value, rolling }: { value: number | null; rolling: boolean }) {
   return (
-    <div className={`transition-all duration-150 select-none leading-none text-center
-      ${rolling ? 'animate-spin' : ''}
-      ${big ? 'text-4xl scale-110 text-yellow-300' : 'text-2xl text-white'}`}
-      style={{ minWidth: '2rem' }}>
+    <div className={`text-7xl leading-none select-none transition-transform duration-100
+      ${rolling ? 'scale-110' : 'scale-100'}`}>
       {value !== null ? FACES[Math.min(value, 4)] : '🎲'}
     </div>
   );
@@ -26,66 +24,77 @@ export default function DiceRoller({ result, dice1, dice2, bonusRoll, onRoll }: 
   const [rolling, setRolling] = useState(false);
   const [disp1, setDisp1] = useState<number | null>(dice1);
   const [disp2, setDisp2] = useState<number | null>(dice2);
-  const [showBig, setShowBig] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevResult = useRef<number | null>(result);
 
   useEffect(() => {
     if (result !== null && result !== prevResult.current) {
       prevResult.current = result;
       setRolling(true);
-      setShowBig(false);
+      setShowOverlay(true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
       let ticks = 0;
       intervalRef.current = setInterval(() => {
         setDisp1(Math.floor(Math.random() * 4) + 1);
         setDisp2(Math.floor(Math.random() * 4) + 1);
         ticks++;
-        if (ticks >= 14) {
+        if (ticks >= 16) {
           clearInterval(intervalRef.current!);
           setDisp1(dice1);
           setDisp2(dice2);
           setRolling(false);
-          setShowBig(true);
-          setTimeout(() => setShowBig(false), 900);
+          hideTimer.current = setTimeout(() => setShowOverlay(false), 1400);
         }
       }, 55);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [result, dice1, dice2]);
 
   const isDoubles = dice1 !== null && dice2 !== null && dice1 === dice2;
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Two dice */}
-      <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border ${isDoubles && !rolling ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-700 bg-gray-900/30'}`}>
-        <DieFace value={disp1} rolling={rolling} big={showBig} />
-        <span className="text-gray-600 text-xs">+</span>
-        <DieFace value={disp2} rolling={rolling} big={showBig} />
-      </div>
-
-      {/* Result + doubles badge */}
-      <div className="w-16 text-center">
-        {result !== null && !rolling && (
-          <div className={`font-bold transition-all duration-200 ${showBig ? 'text-xl text-yellow-300' : 'text-sm text-yellow-400'}`}>
-            {result}칸
-          </div>
-        )}
-        {isDoubles && !rolling && (
-          <div className="text-[10px] text-yellow-300 font-bold animate-pulse">🎯 더블!</div>
-        )}
-        {bonusRoll && !rolling && result === null && (
-          <div className="text-[10px] text-green-300 font-bold animate-pulse">🎁 보너스!</div>
-        )}
-      </div>
-
-      {/* Roll button */}
+    <>
+      {/* Roll button — stays in controls bar */}
       <button
-        onClick={() => { if (!rolling) onRoll(); }}
+        onClick={() => { if (!rolling) { setShowOverlay(true); onRoll(); } }}
         disabled={rolling || result !== null}
         className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold rounded-lg text-sm transition-colors">
         🎲 굴리기
       </button>
-    </div>
+
+      {/* Center overlay — shown while rolling and briefly after */}
+      {showOverlay && (
+        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-40">
+          <div className={`flex flex-col items-center gap-4 px-10 py-8 rounded-3xl border-2 shadow-2xl
+            ${isDoubles && !rolling ? 'border-yellow-400 bg-gray-950/95' : 'border-gray-600 bg-gray-950/90'}`}>
+
+            {/* Two dice */}
+            <div className="flex items-center gap-6">
+              <DieFace value={disp1} rolling={rolling} />
+              <span className="text-3xl text-gray-500 font-bold">+</span>
+              <DieFace value={disp2} rolling={rolling} />
+            </div>
+
+            {/* Result */}
+            {!rolling && result !== null && (
+              <div className="text-center">
+                <div className="text-4xl font-black text-yellow-300">{result}칸</div>
+                {isDoubles && (
+                  <div className="text-lg text-yellow-400 font-bold animate-pulse mt-1">🎯 더블! 보너스 턴!</div>
+                )}
+              </div>
+            )}
+
+            {rolling && (
+              <div className="text-sm text-gray-400 animate-pulse">굴리는 중...</div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
