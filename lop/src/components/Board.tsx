@@ -64,6 +64,7 @@ export default function Board({ state, dispatch }: Props) {
   const [goldAnims, setGoldAnims] = useState<GoldAnim[]>([]);
   const prevGoldRef = useRef<number>(state.player.gold);
   const [viewPieceId, setViewPieceId] = useState<string | null>(null);
+  const [pieceSelectorReady, setPieceSelectorReady] = useState(false);
   const [infoTileId, setInfoTileId] = useState<number | null>(null);
   const [aiNotif, setAiNotif] = useState<string | null>(null);
   const [turnBanner, setTurnBanner] = useState<string | null>(null);
@@ -110,6 +111,11 @@ export default function Board({ state, dispatch }: Props) {
     }
     prevPiecesRef.current = state.pieces;
   }, [state.pieces]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset piece selector gate on new roll
+  useEffect(() => {
+    if (state.diceResult === null) setPieceSelectorReady(false);
+  }, [state.diceResult]);
 
   // Dice notification for ALL players
   useEffect(() => {
@@ -437,9 +443,10 @@ export default function Board({ state, dispatch }: Props) {
       {isPlayerTurn && (
         <DiceRoller result={state.diceResult} dice1={state.dice1} dice2={state.dice2}
           bonusRoll={state.bonusRoll} waiting={state.turnPhase === 'roll'}
-          onRoll={() => dispatch({ type: 'ROLL_DICE' })} />
+          onRoll={() => dispatch({ type: 'ROLL_DICE' })}
+          onAnimationComplete={() => setPieceSelectorReady(true)} />
       )}
-      {isPlayerTurn && state.turnPhase === 'select_piece' && (
+      {isPlayerTurn && state.turnPhase === 'select_piece' && pieceSelectorReady && (
         <PieceSelector state={state} dispatch={dispatch} />
       )}
       {state.lapBonusAnim && <LapBonusModal state={state} dispatch={dispatch} />}

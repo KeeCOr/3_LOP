@@ -8,6 +8,7 @@ interface Props {
   bonusRoll?: boolean;
   waiting: boolean;
   onRoll: () => void;
+  onAnimationComplete?: () => void;
 }
 
 const FACES = ['', '⚀', '⚁', '⚂', '⚃'];
@@ -21,7 +22,7 @@ function DieFace({ value, rolling }: { value: number | null; rolling: boolean })
   );
 }
 
-export default function DiceRoller({ result, dice1, dice2, bonusRoll, waiting, onRoll }: Props) {
+export default function DiceRoller({ result, dice1, dice2, bonusRoll, waiting, onRoll, onAnimationComplete }: Props) {
   const [rolling, setRolling] = useState(false);
   const [disp1, setDisp1] = useState<number | null>(dice1);
   const [disp2, setDisp2] = useState<number | null>(dice2);
@@ -46,7 +47,7 @@ export default function DiceRoller({ result, dice1, dice2, bonusRoll, waiting, o
           setDisp1(dice1);
           setDisp2(dice2);
           setRolling(false);
-          hideTimer.current = setTimeout(() => setShowOverlay(false), 1400);
+          hideTimer.current = setTimeout(() => { setShowOverlay(false); onAnimationComplete?.(); }, 1400);
         }
       }, 55);
     }
