@@ -184,6 +184,16 @@ export default function Board({ state, dispatch }: Props) {
     : state.pieces;
   const movingTileId = anim ? anim.path[anim.step] : -1;
 
+  // Detect move that is about to animate (useEffect sets anim AFTER render, so check here
+  // to prevent modals flashing for one frame before the animation state is set)
+  const pieceAboutToAnimate = state.pieces.some(piece => {
+    const prev = prevPiecesRef.current.find(p => p.id === piece.id);
+    if (!prev || !piece.troops) return false;
+    const steps = (piece.position - prev.position + TOTAL_TILES) % TOTAL_TILES;
+    return prev.position !== piece.position && steps > 0 && steps <= 12;
+  });
+  const isAnimating = anim !== null || pieceAboutToAnimate;
+
   const cardSlotUsable = isPlayerTurn && !['battle', 'start_deploy', 'event_card', 'shop', 'choose_move_tile', 'end_turn'].includes(state.turnPhase);
 
   const viewPiece = viewPieceId ? state.pieces.find(p => p.id === viewPieceId) : null;
@@ -444,36 +454,36 @@ export default function Board({ state, dispatch }: Props) {
       {isPlayerTurn && state.turnPhase === 'select_piece' && pieceSelectorReady && (
         <PieceSelector state={state} dispatch={dispatch} />
       )}
-      {state.lapBonusAnim && <LapBonusModal state={state} dispatch={dispatch} />}
+      {!isAnimating && state.lapBonusAnim && <LapBonusModal state={state} dispatch={dispatch} />}
       {state.turnPhase === 'defend_chance' && state.pendingBattleTileId !== null && (
         <DefendChanceModal state={state} dispatch={dispatch} />
       )}
       {state.turnPhase === 'start_deploy' && <StartDeployModal state={state} dispatch={dispatch} />}
-      {!anim && state.turnPhase === 'battle' && state.activeBattle && (
+      {!isAnimating && state.turnPhase === 'battle' && state.activeBattle && (
         <BattleModal state={state} dispatch={dispatch} />
       )}
-      {!anim && isPlayerTurn && state.turnPhase === 'tile_event' && state.activeTileAction !== null && (
+      {!isAnimating && isPlayerTurn && state.turnPhase === 'tile_event' && state.activeTileAction !== null && (
         <TileActionModal state={state} dispatch={dispatch} />
       )}
-      {!anim && isPlayerTurn && state.turnPhase === 'deploy' && state.activeDeployTileId !== null && (
+      {!isAnimating && isPlayerTurn && state.turnPhase === 'deploy' && state.activeDeployTileId !== null && (
         <DeployModal state={state} dispatch={dispatch} />
       )}
-      {!anim && isPlayerTurn && state.turnPhase === 'build' && (
+      {!isAnimating && isPlayerTurn && state.turnPhase === 'build' && (
         <BuildModal state={state} dispatch={dispatch} />
       )}
-      {!anim && (isPlayerTurn || !isPlayerTurn) && state.turnPhase === 'shop' && (
+      {!isAnimating && state.turnPhase === 'shop' && (
         <ShopModal state={state} dispatch={dispatch} />
       )}
-      {!anim && state.turnPhase === 'event_card' && state.activeEvent && (
+      {!isAnimating && state.turnPhase === 'event_card' && state.activeEvent && (
         <EventModal state={state} dispatch={dispatch} />
       )}
-      {isPlayerTurn && state.turnPhase === 'forced_sell' && state.activeTileAction !== null && (
+      {!isAnimating && isPlayerTurn && state.turnPhase === 'forced_sell' && state.activeTileAction !== null && (
         <ForcedSellModal state={state} dispatch={dispatch} />
       )}
       {viewPiece && (
         <PieceInfoModal state={state} piece={viewPiece} onClose={() => setViewPieceId(null)} />
       )}
-      {isPlayerTurn && state.turnPhase === 'mercenary' && (
+      {!isAnimating && isPlayerTurn && state.turnPhase === 'mercenary' && (
         <MercenaryModal state={state} dispatch={dispatch} />
       )}
 

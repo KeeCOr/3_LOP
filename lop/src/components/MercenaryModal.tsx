@@ -51,10 +51,16 @@ export default function MercenaryModal({ state, dispatch }: Props) {
               <div className="text-xs text-gray-500 text-center py-4">보유 영토 없음</div>
             )}
           </div>
-          <button onClick={() => setShowTileSelect(false)}
-            className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
-            뒤로
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowTileSelect(false)}
+              className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+              뒤로
+            </button>
+            <button onClick={() => dispatch({ type: 'TAKE_MERCENARY_TO_PIECE' })}
+              className="flex-1 py-2 bg-blue-700 hover:bg-blue-600 rounded-lg text-sm font-bold">
+              ⚔️ 말에 합류
+            </button>
+          </div>
         </div>
       </div>
     );
