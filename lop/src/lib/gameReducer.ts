@@ -174,7 +174,7 @@ export type GameAction =
   | { type: 'CHOOSE_PASS' }
   | { type: 'SELL_LAND'; tileId: number }
   | { type: 'CONFIRM_FORCED_SELL' }
-  | { type: 'COLLECT_TROOPS'; tileId: number }
+  | { type: 'COLLECT_TROOPS'; tileId: number; amount?: number }
   | { type: 'BATTLE_FINISH' }
   | { type: 'DEPLOY_TROOPS'; tileId: number; garrison: TroopComp }
   | { type: 'BUILD'; tileId: number; buildingType: 'vault' | 'barracks' | 'fort' }
@@ -647,7 +647,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const piece = state.pieces.find(p => p.id === state.selectedPieceId && p.owner === owner)
         ?? state.pieces.find(p => p.owner === owner && p.troops > 0)!;
       const maxTroops = CHARACTERS[piece.characterType].maxTroops;
-      const canCollect = Math.min(tile.troops, maxTroops - piece.troops);
+      const canCollect = Math.min(action.amount ?? tile.troops, tile.troops, maxTroops - piece.troops);
       const nextPhase = state.turnPhase === 'build' ? 'end_turn' as const : state.turnPhase;
       if (canCollect <= 0) return { ...state, activeTileAction: null, turnPhase: nextPhase };
       const collectComp = scaleComp(tile.garrison, canCollect);

@@ -5,7 +5,7 @@ import type { GameAction } from '@/lib/gameReducer';
 import { TILE_DEFINITIONS, TOTAL_TILES } from '@/lib/boardLayout';
 import { FACTION_COLORS } from '@/lib/factionColors';
 import { getToll, getLapIncome, getLapTroops } from '@/lib/economyUtils';
-import { BUILDING_DATA, LAP_LAND_PRODUCTION, TROOP_DATA } from '@/lib/gameData';
+import { BUILDING_DATA, LAP_LAND_PRODUCTION, TROOP_DATA, CHARACTERS } from '@/lib/gameData';
 import BoardTile from './BoardTile';
 import HUD from './HUD';
 import DiceRoller from './DiceRoller';
@@ -67,15 +67,20 @@ export default function Board({ state, dispatch }: Props) {
   const [infoTileId, setInfoTileId] = useState<number | null>(null);
   const [aiNotif, setAiNotif] = useState<string | null>(null);
   const [turnBanner, setTurnBanner] = useState<string | null>(null);
+  const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: string; fc: typeof FACTION_COLORS['player'] } | null>(null);
+  const [diceNotif, setDiceNotif] = useState<{ name: string; d1: number; d2: number; total: number; fc: typeof FACTION_COLORS['player'] } | null>(null);
   const prevLogLen = useRef(state.log.length);
   const prevTurn = useRef(state.currentTurn);
+  const prevDiceResult = useRef<number | null>(state.diceResult);
   const aiNotifTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const turnBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moveNotifTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const diceNotifTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isChoosingTile = state.turnPhase === 'choose_move_tile' && isPlayerTurn;
   const fc = FACTION_COLORS[state.currentTurn];
 
-  // Piece movement animation
+  // Piece movement animation + move notification
   useEffect(() => {
     for (const piece of state.pieces) {
       const prev = prevPiecesRef.current.find(p => p.id === piece.id);
@@ -86,11 +91,43 @@ export default function Board({ state, dispatch }: Props) {
           for (let i = 1; i <= steps; i++) path.push((prev.position + i) % TOTAL_TILES);
           setAnim({ pieceId: piece.id, path, step: 0 });
         }
+        // Movement notification
+        const ownerName = piece.owner === 'player' ? '플레이어'
+          : piece.owner === 'ai' ? state.ai.name
+          : piece.owner === 'ai2' ? (state.ai2?.name ?? 'AI 2')
+          : (state.ai3?.name ?? 'AI 3');
+        const destDef = TILE_DEFINITIONS.find(d => d.index === piece.position);
+        setMoveNotif({
+          name: ownerName,
+          char: CHARACTERS[piece.characterType].name,
+          dest: destDef?.label ?? `${piece.position}번`,
+          fc: FACTION_COLORS[piece.owner],
+        });
+        if (moveNotifTimer.current) clearTimeout(moveNotifTimer.current);
+        moveNotifTimer.current = setTimeout(() => setMoveNotif(null), 2000);
         break;
       }
     }
     prevPiecesRef.current = state.pieces;
-  }, [state.pieces]);
+  }, [state.pieces]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dice notification for ALL players
+  useEffect(() => {
+    if (state.diceResult !== null && state.diceResult !== prevDiceResult.current) {
+      prevDiceResult.current = state.diceResult;
+      const name = getCurrentPlayerName(state);
+      setDiceNotif({
+        name,
+        d1: state.dice1 ?? 1,
+        d2: state.dice2 ?? 1,
+        total: state.diceResult,
+        fc: FACTION_COLORS[state.currentTurn],
+      });
+      if (diceNotifTimer.current) clearTimeout(diceNotifTimer.current);
+      diceNotifTimer.current = setTimeout(() => setDiceNotif(null), 2000);
+    }
+    if (state.diceResult === null) prevDiceResult.current = null;
+  }, [state.diceResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!anim) return;
@@ -190,6 +227,38 @@ export default function Board({ state, dispatch }: Props) {
           })}
         </div>
       </div>
+
+      {/* Dice notification overlay — all players */}
+      {diceNotif && !turnBanner && (
+        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-35">
+          <div className={`flex flex-col items-center gap-3 px-8 py-6 rounded-3xl border-2 shadow-2xl
+            ${diceNotif.fc.border} bg-gray-950/95`}>
+            <div className={`text-sm font-bold ${diceNotif.fc.text}`}>{diceNotif.name} 주사위</div>
+            <div className="flex items-center gap-5">
+              <span className="text-6xl leading-none">{['','⚀','⚁','⚂','⚃'][Math.min(diceNotif.d1,4)]}</span>
+              <span className="text-2xl text-gray-500">+</span>
+              <span className="text-6xl leading-none">{['','⚀','⚁','⚂','⚃'][Math.min(diceNotif.d2,4)]}</span>
+            </div>
+            <div className={`text-3xl font-black ${diceNotif.fc.textBright}`}>{diceNotif.total}칸</div>
+            {diceNotif.d1 === diceNotif.d2 && (
+              <div className="text-yellow-400 font-bold text-sm animate-pulse">🎯 더블! 보너스 턴!</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Move notification overlay */}
+      {moveNotif && !turnBanner && !diceNotif && (
+        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-30">
+          <div className={`px-6 py-3 rounded-2xl border text-center shadow-2xl
+            ${moveNotif.fc.border} bg-gray-950/90`}>
+            <div className={`text-xs ${moveNotif.fc.text} mb-0.5`}>{moveNotif.name}</div>
+            <div className={`text-base font-black ${moveNotif.fc.textBright}`}>
+              {moveNotif.char} → {moveNotif.dest}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Turn change banner — fixed center overlay */}
       {turnBanner && (
@@ -315,18 +384,6 @@ export default function Board({ state, dispatch }: Props) {
             {state.bonusRoll && isPlayerTurn && <span className="text-green-300 ml-1">🎁보너스</span>}
           </div>
 
-          {isPlayerTurn && state.turnPhase === 'roll' && (
-            <DiceRoller
-              result={state.diceResult}
-              dice1={state.dice1}
-              dice2={state.dice2}
-              bonusRoll={state.bonusRoll}
-              onRoll={() => dispatch({ type: 'ROLL_DICE' })}
-            />
-          )}
-          {isPlayerTurn && state.turnPhase === 'select_piece' && (
-            <PieceSelector state={state} dispatch={dispatch} />
-          )}
           {!isPlayerTurn && (state.turnPhase === 'roll' || state.turnPhase === 'select_piece') && (
             <div className="text-sm text-gray-500">AI가 생각 중...</div>
           )}
@@ -377,6 +434,14 @@ export default function Board({ state, dispatch }: Props) {
       </div>
 
       {/* Modals */}
+      {isPlayerTurn && (
+        <DiceRoller result={state.diceResult} dice1={state.dice1} dice2={state.dice2}
+          bonusRoll={state.bonusRoll} waiting={state.turnPhase === 'roll'}
+          onRoll={() => dispatch({ type: 'ROLL_DICE' })} />
+      )}
+      {isPlayerTurn && state.turnPhase === 'select_piece' && (
+        <PieceSelector state={state} dispatch={dispatch} />
+      )}
       {state.lapBonusAnim && <LapBonusModal state={state} dispatch={dispatch} />}
       {state.turnPhase === 'defend_chance' && state.pendingBattleTileId !== null && (
         <DefendChanceModal state={state} dispatch={dispatch} />

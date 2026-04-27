@@ -6,6 +6,7 @@ interface Props {
   dice1: number | null;
   dice2: number | null;
   bonusRoll?: boolean;
+  waiting: boolean;
   onRoll: () => void;
 }
 
@@ -20,7 +21,7 @@ function DieFace({ value, rolling }: { value: number | null; rolling: boolean })
   );
 }
 
-export default function DiceRoller({ result, dice1, dice2, bonusRoll, onRoll }: Props) {
+export default function DiceRoller({ result, dice1, dice2, bonusRoll, waiting, onRoll }: Props) {
   const [rolling, setRolling] = useState(false);
   const [disp1, setDisp1] = useState<number | null>(dice1);
   const [disp2, setDisp2] = useState<number | null>(dice2);
@@ -58,28 +59,35 @@ export default function DiceRoller({ result, dice1, dice2, bonusRoll, onRoll }: 
 
   return (
     <>
-      {/* Roll button — stays in controls bar */}
-      <button
-        onClick={() => { if (!rolling) { setShowOverlay(true); onRoll(); } }}
-        disabled={rolling || result !== null}
-        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold rounded-lg text-sm transition-colors">
-        🎲 굴리기
-      </button>
+      {/* Roll button — center overlay when waiting for player input */}
+      {waiting && result === null && !rolling && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40">
+          <div className="bg-gray-900 border-2 border-yellow-500 rounded-3xl px-12 py-8 flex flex-col items-center gap-4 shadow-2xl">
+            {bonusRoll && (
+              <div className="text-green-400 font-bold text-base animate-pulse">🎁 보너스 턴!</div>
+            )}
+            <div className="text-8xl leading-none select-none">🎲</div>
+            <button
+              onClick={() => { if (!rolling) onRoll(); }}
+              className="px-10 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-xl text-2xl transition-colors shadow-lg">
+              주사위 굴리기
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Center overlay — shown while rolling and briefly after */}
+      {/* Center overlay — shown while rolling and briefly after result */}
       {showOverlay && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-40">
+        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-50">
           <div className={`flex flex-col items-center gap-4 px-10 py-8 rounded-3xl border-2 shadow-2xl
             ${isDoubles && !rolling ? 'border-yellow-400 bg-gray-950/95' : 'border-gray-600 bg-gray-950/90'}`}>
 
-            {/* Two dice */}
             <div className="flex items-center gap-6">
               <DieFace value={disp1} rolling={rolling} />
               <span className="text-3xl text-gray-500 font-bold">+</span>
               <DieFace value={disp2} rolling={rolling} />
             </div>
 
-            {/* Result */}
             {!rolling && result !== null && (
               <div className="text-center">
                 <div className="text-4xl font-black text-yellow-300">{result}칸</div>
