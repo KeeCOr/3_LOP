@@ -46,14 +46,14 @@ export const BUILDING_DATA: Record<BuildingType, {
     cost: [200, 500, 1000],
     description: '한 바퀴마다 골드 수입',
     lapIncome: [100, 250, 500],
-    toll: [100, 200, 350],
+    toll: [180, 350, 600],
   },
   barracks: {
     name: ['병영', '훈련소', '대병영'],
     cost: [200, 500, 1000],
     description: '한 바퀴마다 병력 생산 +',
     lapTroops: [3, 7, 15],
-    toll: [100, 200, 350],
+    toll: [180, 350, 600],
   },
   fort: {
     name: ['초소', '성벽', '요새'],
@@ -61,7 +61,7 @@ export const BUILDING_DATA: Record<BuildingType, {
     description: '수비 병력 강화',
     attackBonus: [1.15, 1.35, 1.6],
     defenseBonus: [1.1, 1.25, 1.5],
-    toll: [200, 450, 900],
+    toll: [350, 700, 1400],
   },
 };
 

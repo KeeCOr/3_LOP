@@ -6,7 +6,6 @@ import { runFullBattle, getBattleAttack, getBattleDefense, getGarrisonAttack, ge
 
 const AI2_START = 4;
 const AI3_START = 11;
-const BATTLE_DEFEAT_GOLD_PER_TROOP = 15;
 const EMPTY_LAND_INITIAL_TROOPS = 3;
 
 let _slotIdCounter = 0;
@@ -84,11 +83,11 @@ function makePS(id: PlayerType, isHuman: boolean, name: string, goldBonus = 0): 
 // Tier 1 (cheap): 1,2 | Tier 2 (mid): 4,6,8 | Tier 3 (premium): 9,11,13
 const TILE_TIER: Record<number, 1 | 2 | 3> = { 1: 1, 2: 1, 4: 2, 6: 2, 8: 2, 9: 3, 11: 3, 13: 3 };
 const TIER_PRICE = { 1: 200, 2: 400, 3: 650 };
-const TIER_BASE_TOLL = { 1: 40, 2: 80, 3: 130 };
+const TIER_BASE_TOLL = { 1: 80, 2: 160, 3: 260 };
 const TIER_TROOP_RANGE: Record<1|2|3, [number,number]> = { 1: [3,6], 2: [5,9], 3: [7,12] };
 
 const START_INITIAL_TROOPS = 12;
-const START_BASE_TOLL = 200;
+const START_BASE_TOLL = 350;
 
 function createInitialTiles(playerCount: 2 | 3 | 4 = 2): Tile[] {
   return Array.from({ length: 14 }, (_, i) => {
@@ -330,6 +329,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         // Per-land production (includes start tiles as premium land)
         let totalTileProduction = 0;
+        const tileBreakdown: TroopComp = {};
         newState = {
           ...newState,
           tiles: newState.tiles.map(t => {
@@ -337,6 +337,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             const produce = LAP_LAND_PRODUCTION + getLapTroops(t);
             totalTileProduction += produce;
             const dominant = dominantTroopType(t.garrison);
+            tileBreakdown[dominant] = (tileBreakdown[dominant] ?? 0) + produce;
             return { ...t, troops: t.troops + produce, garrison: addToComp(t.garrison, dominant, produce) };
           }),
           log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 병력 +${LAP_TROOP_BONUS + lapTroops}, 영토 병력 생산 +${totalTileProduction}`],
@@ -344,7 +345,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         // Show lap bonus animation for player
         if (owner === 'player') {
-          newState = { ...newState, lapBonusAnim: { gold: LAP_GOLD_BONUS + lapIncome, troops: LAP_TROOP_BONUS + lapTroops, tileProduction: totalTileProduction } };
+          newState = { ...newState, lapBonusAnim: { gold: LAP_GOLD_BONUS + lapIncome, troops: LAP_TROOP_BONUS + lapTroops, tileProduction: totalTileProduction, tileBreakdown } };
         }
         // Increment global lap count (raises tolls)
         newState = { ...newState, lapCount: newState.lapCount + 1 };
@@ -489,15 +490,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           log: [...stateAfterBattle.log, `${getPS(state, owner).name} 전투 승리! ${battle.defenderTileId}번 땅 점령 (기본 ${LAP_LAND_PRODUCTION}명 배치됨)${capturedPiece ? ' · 보너스 턴!' : ''}`],
         };
       } else {
-        const attackerInitialTroops = battle.rounds.length > 0
-          ? battle.rounds[0].attackerTroopsBefore
-          : attackerPiece.troops;
-        const penalty = Math.max(150, attackerInitialTroops * BATTLE_DEFEAT_GOLD_PER_TROOP);
-
         const initialDefTotal = battle.rounds.length > 0
           ? battle.rounds[0].defenderTroopsBefore
           : battle.defenderTroops;
         const defenderRemaining = battle.defenderTroops;
+
+        // Battle defeat = pay toll to tile owner (war reparations)
+        const defTileOwner = defenderTile.owner && defenderTile.owner !== 'neutral' ? defenderTile.owner as PlayerType : null;
+        const defTileOwnerPS = defTileOwner ? getPS(stateAfterBattle, defTileOwner) : null;
+        const tollDouble = defTileOwnerPS ? defTileOwnerPS.tollDoubleLaps > 0 : false;
+        const penalty = getToll(defenderTile, tollDouble, state.lapCount);
 
         let newTiles = stateAfterBattle.tiles;
         let newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
@@ -519,14 +521,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             : t);
         }
 
+        const attackerGoldBefore = getPS(stateAfterBattle, owner).gold;
+        const actualPaid = Math.min(penalty, attackerGoldBefore);
         let newState = setPS({
           ...stateAfterBattle,
           activeBattle: null,
           pieces: newPieces,
           tiles: newTiles,
           turnPhase: 'end_turn' as const,
-          log: [...stateAfterBattle.log, `${getPS(state, owner).name} 전투 패배. 패배 비용 ${penalty}골드 지불`],
-        }, owner, { gold: Math.max(0, getPS(state, owner).gold - penalty) });
+          log: [...stateAfterBattle.log, `${getPS(state, owner).name} 전투 패배. 통행세 ${actualPaid}골드 납부`],
+        }, owner, { gold: Math.max(0, attackerGoldBefore - penalty) });
+
+        // Give toll to tile owner
+        if (defTileOwner && defTileOwner !== owner) {
+          newState = setPS(newState, defTileOwner, { gold: getPS(newState, defTileOwner).gold + actualPaid });
+        }
         return checkBankruptcy(newState);
       }
     }

@@ -58,7 +58,10 @@ export function getAiAction(state: GameState): GameAction {
       if (tile.owner !== state.currentTurn) {
         if (difficulty === 'easy') return { type: 'CHOOSE_PAY_TOLL', tileId };
         const toll = getToll(tile, false, state.lapCount);
-        if (piece.troops > tile.troops * 1.5 && ai.gold > toll * 2) return { type: 'CHOOSE_FIGHT', tileId };
+        // Fight when troop advantage AND toll is expensive relative to gold
+        const tollBurden = toll / Math.max(1, ai.gold);
+        if (piece.troops > tile.troops * 1.3 && tollBurden > 0.2) return { type: 'CHOOSE_FIGHT', tileId };
+        if (piece.troops > tile.troops * 1.8) return { type: 'CHOOSE_FIGHT', tileId };
         return { type: 'CHOOSE_PAY_TOLL', tileId };
       }
 

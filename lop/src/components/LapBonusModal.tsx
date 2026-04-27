@@ -30,22 +30,29 @@ export default function LapBonusModal({ state, dispatch }: Props) {
         <div className="p-5 text-center border-b border-gray-700">
           <div className="text-3xl mb-1">🏁</div>
           <h2 className="text-lg font-bold text-yellow-400 mb-3">출발점 통과!</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-2">
             <div className="flex-1 bg-yellow-900/30 rounded-lg px-2 py-1.5 text-center">
               <div className="text-xs text-gray-400">골드</div>
               <div className="text-yellow-300 font-bold">+{bonus.gold} 💰</div>
             </div>
             <div className="flex-1 bg-blue-900/30 rounded-lg px-2 py-1.5 text-center">
-              <div className="text-xs text-gray-400">병력</div>
-              <div className="text-blue-300 font-bold">+{bonus.troops} ⚔️</div>
+              <div className="text-xs text-gray-400">말 병력</div>
+              <div className="text-blue-300 font-bold">+{bonus.troops}</div>
+              <div className="text-[10px] text-blue-400">{TROOP_DATA.swordsman.emoji} {TROOP_DATA.swordsman.name}</div>
             </div>
-            {bonus.tileProduction > 0 && (
-              <div className="flex-1 bg-green-900/30 rounded-lg px-2 py-1.5 text-center">
-                <div className="text-xs text-gray-400">영토</div>
-                <div className="text-green-300 font-bold">+{bonus.tileProduction} 🏰</div>
-              </div>
-            )}
           </div>
+          {bonus.tileProduction > 0 && (
+            <div className="bg-green-900/20 rounded-lg px-3 py-2 border border-green-800/40">
+              <div className="text-xs text-gray-400 mb-1">🏰 영토 병력 생산 <span className="text-green-300 font-bold">+{bonus.tileProduction}명</span></div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                {(Object.entries(bonus.tileBreakdown) as [TroopType, number][]).filter(([, n]) => n > 0).map(([t, n]) => (
+                  <span key={t} className="text-[11px] text-green-300">
+                    {TROOP_DATA[t].emoji} {TROOP_DATA[t].name} +{n}명
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Troop shop */}

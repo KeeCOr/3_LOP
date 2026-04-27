@@ -148,7 +148,7 @@ export interface GameState {
   activeDeployTileId: number | null;
   winner: PlayerType | null;
   log: string[];
-  lapBonusAnim: { gold: number; troops: number; tileProduction: number } | null;
+  lapBonusAnim: { gold: number; troops: number; tileProduction: number; tileBreakdown: Partial<Record<TroopType, number>> } | null;
   pendingBattleTileId: number | null;
   mercenaryResult: { troopType: TroopType; amount: number } | null;
   lapCount: number;

@@ -2,7 +2,7 @@ import type { Tile } from './gameTypes';
 import { BUILDING_DATA, TAX_RATE } from './gameData';
 
 export function getToll(tile: Tile, tollDouble = false, lapCount = 0): number {
-  const lapBonus = 1 + lapCount * 0.08; // +8% per global lap
+  const lapBonus = 1 + lapCount * 0.12; // +12% per global lap
   let base: number;
   if (tile.building && tile.buildingLevel > 0) {
     base = BUILDING_DATA[tile.building].toll[tile.buildingLevel - 1];
