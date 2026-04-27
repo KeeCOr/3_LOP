@@ -1,4 +1,4 @@
-import type { GameState, TroopType } from '@/lib/gameTypes';
+import type { GameState, TroopType, BuildingType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { getToll, getLapTroops } from '@/lib/economyUtils';
 import { TROOP_DATA, LAP_LAND_PRODUCTION } from '@/lib/gameData';
@@ -39,11 +39,17 @@ export default function TileActionModal({ state, dispatch }: Props) {
             <div className="text-gray-400 mb-0.5">랩 생산</div>
             <div className="text-green-300 font-bold">{lapProd}명</div>
           </div>
-          {!isNeutral && !isStartTile && tile.building && (
+          {!isNeutral && !isStartTile && Object.keys(tile.buildings ?? {}).length > 0 && (
             <div className="flex-1 text-center">
               <div className="text-gray-400 mb-0.5">건물</div>
-              <div className="text-purple-300 font-bold">
-                {tile.building === 'vault' ? '🏦' : tile.building === 'barracks' ? '🏕️' : '🏰'} Lv{tile.buildingLevel}
+              <div className="flex gap-1 justify-center flex-wrap">
+                {(Object.entries(tile.buildings ?? {}) as [BuildingType, number][])
+                  .filter(([, lv]) => lv > 0)
+                  .map(([type, lv]) => (
+                    <span key={type} className="text-purple-300 font-bold text-xs">
+                      {type === 'vault' ? '🏦' : type === 'barracks' ? '🏕️' : '🏰'}Lv{lv}
+                    </span>
+                  ))}
               </div>
             </div>
           )}

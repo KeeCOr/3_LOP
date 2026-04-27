@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import type { GameState, Piece, EventCard } from '@/lib/gameTypes';
+import type { GameState, Piece, EventCard, BuildingType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { TILE_DEFINITIONS, TOTAL_TILES } from '@/lib/boardLayout';
 import { FACTION_COLORS } from '@/lib/factionColors';
@@ -117,15 +117,15 @@ export default function Board({ state, dispatch }: Props) {
     if (state.diceResult === null) setPieceSelectorReady(false);
   }, [state.diceResult]);
 
-  // Dice notification for ALL players
+  // Dice notification for AI players only (player uses DiceRoller component)
   useEffect(() => {
-    if (state.diceResult !== null && state.diceResult !== prevDiceResult.current) {
+    if (state.diceResult !== null && state.diceResult !== prevDiceResult.current && state.currentTurn !== 'player') {
       prevDiceResult.current = state.diceResult;
       const name = getCurrentPlayerName(state);
       setDiceNotif({
         name,
-        d1: state.dice1 ?? 1,
-        d2: state.dice2 ?? 1,
+        d1: state.dice1 ?? 0,
+        d2: state.dice2 ?? 0,
         total: state.diceResult,
         fc: FACTION_COLORS[state.currentTurn],
       });
@@ -241,9 +241,9 @@ export default function Board({ state, dispatch }: Props) {
             ${diceNotif.fc.border} bg-gray-950/95`}>
             <div className={`text-sm font-bold ${diceNotif.fc.text}`}>{diceNotif.name} 주사위</div>
             <div className="flex items-center gap-5">
-              <span className="text-6xl leading-none">{['','⚀','⚁','⚂','⚃'][Math.min(diceNotif.d1,4)]}</span>
+              <span className="text-5xl leading-none">{['0️⃣','1️⃣','2️⃣','3️⃣'][Math.min(diceNotif.d1,3)]}</span>
               <span className="text-2xl text-gray-500">+</span>
-              <span className="text-6xl leading-none">{['','⚀','⚁','⚂','⚃'][Math.min(diceNotif.d2,4)]}</span>
+              <span className="text-5xl leading-none">{['0️⃣','1️⃣','2️⃣','3️⃣'][Math.min(diceNotif.d2,3)]}</span>
             </div>
             <div className={`text-3xl font-black ${diceNotif.fc.textBright}`}>{diceNotif.total}칸</div>
             {diceNotif.d1 === diceNotif.d2 && (
@@ -334,12 +334,18 @@ export default function Board({ state, dispatch }: Props) {
                     <span className="text-yellow-300 font-bold">{getLapIncome(infoTile)}골드</span>
                   </div>
                 )}
-                {infoTile.building && (
-                  <div className="flex justify-between border-t border-gray-700 pt-1.5">
-                    <span className="text-gray-400">🏗️ 건물</span>
-                    <span className="text-purple-300 font-bold">
-                      {BUILDING_DATA[infoTile.building].name[infoTile.buildingLevel - 1]} Lv{infoTile.buildingLevel}
-                    </span>
+                {Object.keys(infoTile.buildings ?? {}).length > 0 && (
+                  <div className="border-t border-gray-700 pt-1.5">
+                    <div className="text-gray-400 mb-0.5">🏗️ 건물</div>
+                    <div className="flex flex-wrap gap-x-2">
+                      {(Object.entries(infoTile.buildings ?? {}) as [BuildingType, number][])
+                        .filter(([, lv]) => lv > 0)
+                        .map(([type, lv]) => (
+                          <span key={type} className="text-purple-300 font-bold text-xs">
+                            {BUILDING_DATA[type].name[lv - 1]} Lv{lv}
+                          </span>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -349,7 +355,7 @@ export default function Board({ state, dispatch }: Props) {
             <div className="text-xs text-yellow-400">🎲 찬스 카드 칸</div>
           )}
           {infoTile.type === 'mercenary' && (
-            <div className="text-xs text-orange-400">⚔️ 용병소 — 200골드로 랜덤 병력 고용</div>
+            <div className="text-xs text-orange-400">⚔️ 용병소 — 400골드로 랜덤 병력 2~4명 고용 (1회)</div>
           )}
           {(infoTile.type === 'start_p' || infoTile.type === 'start_e') && (
             <div className="flex flex-col gap-1.5 text-xs">
@@ -399,44 +405,33 @@ export default function Board({ state, dispatch }: Props) {
         </div>
       </div>
 
-      {/* Log */}
-      <div className="flex-none h-10 px-3 pb-1 overflow-hidden">
-        {[...state.log].reverse().slice(0, 3).map((l, i) => (
-          <div key={i} className="text-[11px] text-gray-500 truncate">{l}</div>
+      {/* Card area — horizontal bottom strip */}
+      <div className="flex-none px-2 py-1.5 border-t border-gray-800 bg-gray-950 flex items-center gap-2 overflow-x-auto min-h-[46px]" style={{ scrollbarWidth: 'none' }}>
+        <span className="text-[9px] text-gray-600 shrink-0 font-bold">카드</span>
+        {state.player.cardSlot.length === 0 && (
+          <span className="text-[9px] text-gray-700 italic">없음</span>
+        )}
+        {state.player.cardSlot.map(card => (
+          <button
+            key={card.id}
+            onClick={() => cardSlotUsable && dispatch({ type: 'USE_EVENT_CARD', cardId: card.id })}
+            disabled={!cardSlotUsable}
+            title={card.text}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 shrink-0 transition-all
+              border-yellow-600 bg-yellow-950 text-yellow-300
+              ${cardSlotUsable ? 'hover:brightness-125 cursor-pointer active:scale-95' : 'opacity-40 cursor-not-allowed'}`}
+          >
+            <span className="text-sm font-black">{cardEffectLabel(card)}</span>
+            <span className="text-[10px] text-yellow-600 max-w-[80px] truncate">{card.text}</span>
+          </button>
         ))}
       </div>
 
-      {/* Card area — fixed right panel */}
-      <div className="fixed right-1 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-10 pointer-events-none" style={{ maxHeight: '70vh' }}>
-        {state.player.cardSlot.length > 0 && (
-          <>
-            <div className="text-[9px] text-gray-500 text-center font-bold">보유 카드</div>
-            {state.player.cardSlot.map(card => (
-              <button
-                key={card.id}
-                onClick={() => cardSlotUsable && dispatch({ type: 'USE_EVENT_CARD', cardId: card.id })}
-                disabled={!cardSlotUsable}
-                title={card.text}
-                style={{ pointerEvents: 'auto' }}
-                className={`flex flex-col items-center px-2 py-2 rounded-xl border-2 shadow-xl w-[72px] transition-all
-                  border-yellow-500 bg-yellow-950/95 text-yellow-300
-                  ${cardSlotUsable ? 'hover:scale-105 hover:brightness-125 cursor-pointer' : 'opacity-40 cursor-not-allowed'}
-                `}
-              >
-                <div className="text-base font-black leading-none mb-0.5">{cardEffectLabel(card)}</div>
-                <div className="text-[8px] text-yellow-600 text-center leading-tight w-full">
-                  {card.text.length > 14 ? card.text.slice(0, 13) + '…' : card.text}
-                </div>
-              </button>
-            ))}
-          </>
-        )}
-        {state.player.cardSlot.length === 0 && (
-          <div className="flex flex-col items-center gap-1 opacity-25">
-            <div className="text-[9px] text-gray-500 text-center font-bold">보유 카드</div>
-            <div className="w-[72px] h-[52px] rounded-xl border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 text-xs">없음</div>
-          </div>
-        )}
+      {/* Log */}
+      <div className="flex-none h-8 px-3 overflow-hidden">
+        {[...state.log].reverse().slice(0, 2).map((l, i) => (
+          <div key={i} className="text-[10px] text-gray-600 truncate">{l}</div>
+        ))}
       </div>
 
       {/* Modals */}

@@ -54,8 +54,7 @@ export interface Tile {
   owner: Owner;
   troops: number;
   garrison: TroopComp;
-  building: BuildingType | null;
-  buildingLevel: number;
+  buildings: Partial<Record<BuildingType, number>>;
   landPrice: number;
   baseToll: number;
 }

@@ -1,6 +1,6 @@
-import type { GameState, PlayerState, PlayerType } from './gameTypes';
+import type { GameState, PlayerState, PlayerType, CharacterType } from './gameTypes';
 import type { GameAction } from './gameReducer';
-import { CHARACTERS, TROOP_DATA } from './gameData';
+import { CHARACTERS, TROOP_DATA, nextHireCost } from './gameData';
 import { getToll, getBuildCost } from './economyUtils';
 
 function getAiPS(state: GameState): PlayerState {
@@ -112,20 +112,28 @@ export function getAiAction(state: GameState): GameAction {
       }
       if (difficulty === 'easy') return { type: 'SKIP_BUILD' };
       if (ai.gold < 300) return { type: 'SKIP_BUILD' };
-      if (ai.gold < 600) {
-        const cost = getBuildCost(tile, 'barracks');
-        if (cost <= ai.gold) return { type: 'BUILD', tileId, buildingType: 'barracks' };
-      } else {
-        const preferVault = difficulty === 'hard' && ai.gold < 1000;
-        const type = preferVault ? 'vault' : (tile.building ?? 'barracks');
-        const cost = getBuildCost(tile, type as 'vault' | 'barracks' | 'fort');
-        if (cost <= ai.gold) return { type: 'BUILD', tileId, buildingType: type as 'vault' | 'barracks' | 'fort' };
-      }
+      const preferredType: 'vault' | 'barracks' | 'fort' =
+        ai.gold < 600 ? 'barracks' :
+        (difficulty === 'hard' && ai.gold < 1000) ? 'vault' : 'barracks';
+      const cost = getBuildCost(tile, preferredType);
+      if (cost !== Infinity && cost <= ai.gold) return { type: 'BUILD', tileId, buildingType: preferredType };
       return { type: 'SKIP_BUILD' };
     }
 
     case 'shop': {
       const piece = state.pieces.find(p => p.id === state.selectedPieceId);
+      // Hire a new piece on normal/hard if under piece cap and has surplus gold
+      if (difficulty !== 'easy') {
+        const maxPieces = difficulty === 'hard' ? 3 : 2;
+        if (aiPieces.length < maxPieces) {
+          const hireCost = nextHireCost(ai.pieceCount);
+          if (ai.gold >= hireCost * 1.5) {
+            const charTypes: CharacterType[] = ['general', 'knight', 'merchant'];
+            const charType = charTypes[Math.floor(Math.random() * charTypes.length)];
+            return { type: 'BUY_PIECE', characterType: charType };
+          }
+        }
+      }
       if (piece && piece.troops < 8 && ai.gold >= 200) {
         const troopType = difficulty === 'hard' ? 'spearman' : 'swordsman';
         const price = TROOP_DATA[troopType].price;
@@ -139,10 +147,13 @@ export function getAiAction(state: GameState): GameAction {
       return { type: 'APPLY_EVENT_CARD' };
 
     case 'mercenary': {
-      // AI buys mercenaries if gold is sufficient and troops are low
+      // If mercenary already hired, take them to piece
+      if (state.mercenaryResult !== null) {
+        return { type: 'TAKE_MERCENARY_TO_PIECE' };
+      }
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)
         ?? state.pieces.find(p => p.owner === state.currentTurn);
-      const MERC_COST = 200;
+      const MERC_COST = 400;
       if (piece && piece.troops < 8 && ai.gold >= MERC_COST * 2) {
         return { type: 'BUY_MERCENARY' };
       }

@@ -47,7 +47,7 @@ export default function ForcedSellModal({ state, dispatch }: Props) {
                     <div>
                       <span className="font-bold">{t.id}번 땅</span>
                       <span className="text-xs text-gray-400 ml-2">
-                        {t.building ? `건물 Lv${t.buildingLevel}` : '건물 없음'} · 수비 {t.troops}명
+                        {Object.keys(t.buildings ?? {}).length > 0 ? `건물 ${Object.keys(t.buildings).length}종` : '건물 없음'} · 수비 {t.troops}명
                       </span>
                     </div>
                     <button

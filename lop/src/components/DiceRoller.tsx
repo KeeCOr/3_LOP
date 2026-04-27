@@ -11,13 +11,13 @@ interface Props {
   onAnimationComplete?: () => void;
 }
 
-const FACES = ['', '⚀', '⚁', '⚂', '⚃'];
+const FACES = ['0️⃣', '1️⃣', '2️⃣', '3️⃣'];
 
 function DieFace({ value, rolling }: { value: number | null; rolling: boolean }) {
   return (
-    <div className={`text-7xl leading-none select-none transition-transform duration-100
+    <div className={`text-6xl leading-none select-none transition-transform duration-100
       ${rolling ? 'scale-110' : 'scale-100'}`}>
-      {value !== null ? FACES[Math.min(value, 4)] : '🎲'}
+      {value !== null ? FACES[Math.min(value, 3)] : '🎲'}
     </div>
   );
 }
@@ -39,8 +39,8 @@ export default function DiceRoller({ result, dice1, dice2, bonusRoll, waiting, o
       if (hideTimer.current) clearTimeout(hideTimer.current);
       let ticks = 0;
       intervalRef.current = setInterval(() => {
-        setDisp1(Math.floor(Math.random() * 4) + 1);
-        setDisp2(Math.floor(Math.random() * 4) + 1);
+        setDisp1(Math.floor(Math.random() * 4));
+        setDisp2(Math.floor(Math.random() * 4));
         ticks++;
         if (ticks >= 16) {
           clearInterval(intervalRef.current!);

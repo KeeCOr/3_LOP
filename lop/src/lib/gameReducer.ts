@@ -117,7 +117,7 @@ function createInitialTiles(playerCount: 2 | 3 | 4 = 2): Tile[] {
       : {};
     return {
       id: i, type: tileType, owner: startOwner, troops, garrison,
-      building: null, buildingLevel: 0, landPrice, baseToll,
+      buildings: {}, landPrice, baseToll,
     } as Tile;
   });
 }
@@ -178,7 +178,7 @@ export type GameAction =
   | { type: 'DEPLOY_TROOPS'; tileId: number; garrison: TroopComp }
   | { type: 'BUILD'; tileId: number; buildingType: 'vault' | 'barracks' | 'fort' }
   | { type: 'SKIP_BUILD' }
-  | { type: 'BUY_TROOPS'; pieceId: string; troopType: TroopType; amount: number }
+  | { type: 'BUY_TROOPS'; pieceId: string; troopType: TroopType; amount: number; tileId?: number }
   | { type: 'BUY_PIECE'; characterType: CharacterType }
   | { type: 'OPEN_SHOP' }
   | { type: 'CLOSE_SHOP' }
@@ -186,6 +186,8 @@ export type GameAction =
   | { type: 'USE_EVENT_CARD'; cardId: string }
   | { type: 'CLEAR_LAP_BONUS' }
   | { type: 'BUY_MERCENARY' }
+  | { type: 'TAKE_MERCENARY_TO_PIECE' }
+  | { type: 'DEPLOY_MERCENARY_TO_TILE'; tileId: number }
   | { type: 'CLOSE_MERCENARY' }
   | { type: 'END_TURN' };
 
@@ -278,8 +280,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const owner = state.currentTurn;
       const ownerPS = getPS(state, owner);
       const bonus = ownerPS.diceBonusTurns > 0 ? ownerPS.diceBonusAmount : 0;
-      const d1 = Math.floor(Math.random() * 4) + 1;
-      const d2 = Math.floor(Math.random() * 4) + 1;
+      const d1 = Math.floor(Math.random() * 4); // 0-3 (d4)
+      const d2 = Math.floor(Math.random() * 4); // 0-3 (d4)
       const isDoubles = d1 === d2;
       const dice = d1 + d2 + bonus;
       return setPS({
@@ -424,25 +426,48 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'BUY_MERCENARY': {
       const owner = state.currentTurn;
       const ownerPS = getPS(state, owner);
-      const MERC_COST = 200;
-      if (ownerPS.gold < MERC_COST) return state;
+      const MERC_COST = 400;
+      if (ownerPS.gold < MERC_COST || state.mercenaryResult !== null) return state;
       const troopTypes: TroopType[] = ['swordsman', 'archer', 'cavalry', 'spearman'];
       const troopType = troopTypes[Math.floor(Math.random() * troopTypes.length)];
-      const amount = Math.floor(Math.random() * 6) + 3; // 3-8
-      const piece = state.pieces.find(p => p.owner === owner && p.troops > 0)
-        ?? state.pieces.find(p => p.owner === owner)!;
-      const maxTroops = CHARACTERS[piece.characterType].maxTroops;
-      const canAdd = Math.min(amount, maxTroops - piece.troops);
-      if (canAdd <= 0) return { ...state, mercenaryResult: { troopType, amount: 0 } };
-      const newComp = addToComp(piece.composition, troopType, canAdd);
+      const amount = Math.floor(Math.random() * 3) + 2; // 2-4
       return setPS({
         ...state,
-        pieces: state.pieces.map(p => p.id === piece.id
-          ? { ...p, troops: p.troops + canAdd, composition: newComp }
-          : p),
-        mercenaryResult: { troopType, amount: canAdd },
-        log: [...state.log, `${ownerPS.name} 용병 ${TROOP_DATA[troopType].name} ${canAdd}명 고용`],
+        mercenaryResult: { troopType, amount },
+        log: [...state.log, `${ownerPS.name} 용병 ${TROOP_DATA[troopType].name} ${amount}명 계약 (400골드)`],
       }, owner, { gold: ownerPS.gold - MERC_COST });
+    }
+
+    case 'TAKE_MERCENARY_TO_PIECE': {
+      const owner = state.currentTurn;
+      const result = state.mercenaryResult!;
+      const piece = state.pieces.find(p => p.owner === owner && p.id === state.selectedPieceId)
+        ?? state.pieces.find(p => p.owner === owner && p.troops > 0)
+        ?? state.pieces.find(p => p.owner === owner)!;
+      const maxTroops = CHARACTERS[piece.characterType].maxTroops;
+      const canAdd = Math.min(result.amount, maxTroops - piece.troops);
+      return {
+        ...state,
+        pieces: state.pieces.map(p => p.id === piece.id
+          ? { ...p, troops: p.troops + canAdd, composition: addToComp(p.composition, result.troopType, canAdd) }
+          : p),
+        mercenaryResult: null,
+        turnPhase: 'end_turn',
+        log: [...state.log, `용병 ${canAdd}명 말에 합류`],
+      };
+    }
+
+    case 'DEPLOY_MERCENARY_TO_TILE': {
+      const result = state.mercenaryResult!;
+      return {
+        ...state,
+        tiles: state.tiles.map(t => t.id === action.tileId
+          ? { ...t, troops: t.troops + result.amount, garrison: addToComp(t.garrison, result.troopType, result.amount) }
+          : t),
+        mercenaryResult: null,
+        turnPhase: 'end_turn',
+        log: [...state.log, `용병 ${result.amount}명 ${action.tileId}번 영토에 배치`],
+      };
     }
 
     case 'CLOSE_MERCENARY': {
@@ -626,7 +651,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         {
           ...state,
           tiles: state.tiles.map(t => t.id === action.tileId
-            ? { ...t, owner: 'neutral' as const, garrison: {}, building: null, buildingLevel: 0 }
+            ? { ...t, owner: 'neutral' as const, garrison: {}, buildings: {} }
             : t),
           log: [...state.log, `${getPS(state, owner).name} ${action.tileId}번 땅 매각 (+${sellPrice}골드)`],
         },
@@ -686,8 +711,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const discount = ownerPS.buildDiscountLaps > 0;
       const cost = getBuildCost(tile, action.buildingType, discount);
       if (ownerPS.gold < cost) return state;
-      const newLevel = tile.building === action.buildingType ? tile.buildingLevel + 1 : 1;
-      const newTiles = state.tiles.map(t => t.id === action.tileId ? { ...t, building: action.buildingType, buildingLevel: newLevel } : t);
+      const newLevel = (tile.buildings?.[action.buildingType] ?? 0) + 1;
+      const newTiles = state.tiles.map(t => t.id === action.tileId
+        ? { ...t, buildings: { ...t.buildings, [action.buildingType]: newLevel } }
+        : t);
       return setPS({ ...state, tiles: newTiles, turnPhase: 'end_turn' as const }, owner, { gold: ownerPS.gold - cost });
     }
 
@@ -703,6 +730,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const merchantDiscount = piece.characterType === 'merchant' ? 0.9 : 1;
       const priceScale = 1 + ownerPS.troopBuyCount * TROOP_PRICE_SCALE;
       const unitCost = Math.ceil(troopData.price * merchantDiscount * priceScale);
+      if (action.tileId !== undefined) {
+        // Deploy directly to tile garrison
+        const canBuy = Math.min(action.amount, Math.floor(ownerPS.gold / unitCost));
+        if (canBuy <= 0) return state;
+        return setPS(
+          {
+            ...state,
+            tiles: state.tiles.map(t => t.id === action.tileId
+              ? { ...t, troops: t.troops + canBuy, garrison: addToComp(t.garrison, action.troopType, canBuy) }
+              : t),
+          },
+          owner, { gold: ownerPS.gold - canBuy * unitCost, troopBuyCount: ownerPS.troopBuyCount + 1 }
+        );
+      }
       const maxTroops = CHARACTERS[piece.characterType].maxTroops;
       const canBuy = Math.min(action.amount, Math.floor(ownerPS.gold / unitCost), maxTroops - piece.troops);
       if (canBuy <= 0) return state;
@@ -727,7 +768,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (ownerPS.gold < cost) return state;
       const newId = `${owner[0]}${ownerPS.pieceCount}`;
       const startIdx = owner === 'player' ? PLAYER_START : owner === 'ai' ? AI_START : owner === 'ai2' ? AI2_START : AI3_START;
-      const newPiece = createPiece(newId, owner, action.characterType, startIdx);
+      const newPiece = { ...createPiece(newId, owner, action.characterType, startIdx), troops: 3, composition: { swordsman: 3 } };
       return setPS(
         { ...state, pieces: [...state.pieces, newPiece] },
         owner, { gold: ownerPS.gold - cost, pieceCount: ownerPS.pieceCount + 1 }
@@ -941,7 +982,7 @@ function applyEventCardEffect(state: GameState, card: EventCard): GameState {
       if (ownedLands.length > 0) {
         const target = ownedLands[Math.floor(Math.random() * ownedLands.length)];
         const neutralTroops = Math.floor(Math.random() * 6) + 3;
-        newState = { ...newState, tiles: newState.tiles.map(t => t.id === target.id ? { ...t, owner: 'neutral', troops: neutralTroops, building: null, buildingLevel: 0 } : t) };
+        newState = { ...newState, tiles: newState.tiles.map(t => t.id === target.id ? { ...t, owner: 'neutral', troops: neutralTroops, buildings: {} } : t) };
       }
       break;
     }
@@ -956,13 +997,33 @@ function applyEventCardEffect(state: GameState, card: EventCard): GameState {
   return newState;
 }
 
+function eliminatePlayer(state: GameState, id: PlayerType): GameState {
+  // All lands owned by this player become neutral (troops reset to base, garrison cleared)
+  const newTiles = state.tiles.map(t =>
+    t.owner === id ? { ...t, owner: 'neutral' as const, garrison: {}, buildings: {} } : t
+  );
+  // All pieces return to start with 0 troops
+  const newPieces = state.pieces.map(p =>
+    p.owner === id ? { ...p, troops: 0, composition: {}, position: p.startTileIndex } : p
+  );
+  return { ...state, tiles: newTiles, pieces: newPieces };
+}
+
 function checkBankruptcy(state: GameState): GameState {
   if (state.player.gold <= 0) {
     return { ...state, phase: 'gameover', winner: 'ai' };
   }
-  const allAisBroke = state.ai.gold <= 0
-    && (!state.ai2 || state.ai2.gold <= 0)
-    && (!state.ai3 || state.ai3.gold <= 0);
-  if (allAisBroke) return { ...state, phase: 'gameover', winner: 'player' };
-  return state;
+  // Eliminate individual AIs when they go broke
+  let s = state;
+  for (const id of ['ai', 'ai2', 'ai3'] as PlayerType[]) {
+    const ps = id === 'ai' ? s.ai : id === 'ai2' ? s.ai2 : s.ai3;
+    if (ps && ps.gold <= 0) {
+      s = eliminatePlayer(s, id);
+    }
+  }
+  const allAisBroke = s.ai.gold <= 0
+    && (!s.ai2 || s.ai2.gold <= 0)
+    && (!s.ai3 || s.ai3.gold <= 0);
+  if (allAisBroke) return { ...s, phase: 'gameover', winner: 'player' };
+  return s;
 }

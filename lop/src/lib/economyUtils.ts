@@ -1,40 +1,43 @@
-import type { Tile } from './gameTypes';
+import type { Tile, BuildingType } from './gameTypes';
 import { BUILDING_DATA, TAX_RATE } from './gameData';
 
 export function getToll(tile: Tile, tollDouble = false, lapCount = 0): number {
-  const lapBonus = 1 + lapCount * 0.12; // +12% per global lap
-  let base: number;
-  if (tile.building && tile.buildingLevel > 0) {
-    base = BUILDING_DATA[tile.building].toll[tile.buildingLevel - 1];
-  } else {
-    base = tile.baseToll ?? 50;
-  }
+  const lapBonus = 1 + lapCount * 0.12;
+  const buildingEntries = Object.entries(tile.buildings ?? {}) as [BuildingType, number][];
+  // Use the highest toll among all buildings; fall back to baseToll if no buildings
+  const buildingMaxToll = buildingEntries.reduce((max, [type, level]) =>
+    level > 0 ? Math.max(max, BUILDING_DATA[type].toll[level - 1]) : max, 0);
+  const base = buildingMaxToll > 0 ? buildingMaxToll : (tile.baseToll ?? 50);
   const scaled = Math.round(base * lapBonus / 10) * 10;
   return tollDouble ? scaled * 2 : scaled;
 }
 
 export function getLapIncome(tile: Tile): number {
-  if (tile.building !== 'vault' || tile.buildingLevel === 0) return 0;
-  return BUILDING_DATA.vault.lapIncome![tile.buildingLevel - 1];
+  const level = tile.buildings?.vault ?? 0;
+  if (level === 0) return 0;
+  return BUILDING_DATA.vault.lapIncome![level - 1];
 }
 
 export function getLapTroops(tile: Tile): number {
-  if (tile.building !== 'barracks' || tile.buildingLevel === 0) return 0;
-  return BUILDING_DATA.barracks.lapTroops![tile.buildingLevel - 1];
+  const level = tile.buildings?.barracks ?? 0;
+  if (level === 0) return 0;
+  return BUILDING_DATA.barracks.lapTroops![level - 1];
 }
 
 export function getBuildingAttackBonus(tile: Tile): number {
-  if (tile.building !== 'fort' || tile.buildingLevel === 0) return 1;
-  return BUILDING_DATA.fort.attackBonus![tile.buildingLevel - 1];
+  const level = tile.buildings?.fort ?? 0;
+  if (level === 0) return 1;
+  return BUILDING_DATA.fort.attackBonus![level - 1];
 }
 
 export function getBuildingDefenseBonus(tile: Tile): number {
-  if (tile.building !== 'fort' || tile.buildingLevel === 0) return 1;
-  return BUILDING_DATA.fort.defenseBonus![tile.buildingLevel - 1];
+  const level = tile.buildings?.fort ?? 0;
+  if (level === 0) return 1;
+  return BUILDING_DATA.fort.defenseBonus![level - 1];
 }
 
 export function getBuildCost(tile: Tile, type: 'vault' | 'barracks' | 'fort', discount = false): number {
-  const level = tile.building === type ? tile.buildingLevel : 0;
+  const level = tile.buildings?.[type] ?? 0;
   if (level >= 3) return Infinity;
   const cost = BUILDING_DATA[type].cost[level];
   return discount ? Math.floor(cost * 0.5) : cost;

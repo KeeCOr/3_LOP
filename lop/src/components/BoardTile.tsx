@@ -1,4 +1,4 @@
-import type { Tile, Piece, TroopType, CharacterType } from '@/lib/gameTypes';
+import type { Tile, Piece, TroopType, CharacterType, BuildingType } from '@/lib/gameTypes';
 import { TILE_DEFINITIONS } from '@/lib/boardLayout';
 import { TROOP_DATA } from '@/lib/gameData';
 import { FACTION_COLORS } from '@/lib/factionColors';
@@ -94,13 +94,19 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, onClick, o
         </div>
       )}
 
-      {/* Building — visually separated */}
-      {tile.building && (
-        <div className="flex items-center gap-0.5 mt-0.5 px-1 py-0.5 bg-yellow-900/40 rounded border border-yellow-700/50">
-          <span className="text-[11px]">
-            {tile.building === 'vault' ? '🏦' : tile.building === 'barracks' ? '🏕️' : '🏰'}
-          </span>
-          <span className="text-[9px] text-yellow-400 font-bold">Lv{tile.buildingLevel}</span>
+      {/* Buildings — one badge per type */}
+      {Object.keys(tile.buildings ?? {}).length > 0 && (
+        <div className="flex gap-0.5 flex-wrap justify-center mt-0.5">
+          {(Object.entries(tile.buildings ?? {}) as [BuildingType, number][])
+            .filter(([, lv]) => lv > 0)
+            .map(([type, lv]) => (
+              <div key={type} className="flex items-center gap-0.5 px-1 py-0.5 bg-yellow-900/40 rounded border border-yellow-700/50">
+                <span className="text-[11px]">
+                  {type === 'vault' ? '🏦' : type === 'barracks' ? '🏕️' : '🏰'}
+                </span>
+                <span className="text-[9px] text-yellow-400 font-bold">Lv{lv}</span>
+              </div>
+            ))}
         </div>
       )}
 

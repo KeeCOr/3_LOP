@@ -33,6 +33,7 @@ export default function BuildModal({ state, dispatch }: Props) {
   // Troop production state
   const [selectedTroop, setSelectedTroop] = useState<TroopType | null>(null);
   const [buyAmt, setBuyAmt] = useState(1);
+  const [deployToTile, setDeployToTile] = useState(true);
   const priceScale = 1 + state.player.troopBuyCount * TROOP_PRICE_SCALE;
   const maxTroops = piece ? CHARACTERS[piece.characterType].maxTroops : 0;
   const troopTypes = Object.keys(TROOP_DATA) as TroopType[];
@@ -126,9 +127,20 @@ export default function BuildModal({ state, dispatch }: Props) {
         {/* Troop production (unit shop) */}
         {isOwnTile && piece && (
           <div className="mb-3 bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="text-xs font-bold text-gray-400">🛒 유닛 생산</div>
-              <div className="text-xs text-yellow-400">{gold}골드 · {piece.troops}/{maxTroops}명</div>
+              <div className="text-xs text-yellow-400">{gold}골드</div>
+            </div>
+            <div className="flex items-center gap-1 mb-2">
+              <span className="text-[10px] text-gray-500">배치:</span>
+              <button onClick={() => setDeployToTile(true)}
+                className={`px-2 py-0.5 rounded text-[10px] ${deployToTile ? 'bg-yellow-800 text-yellow-200 font-bold' : 'bg-gray-700 text-gray-500 hover:bg-gray-600'}`}>
+                🏰 영토
+              </button>
+              <button onClick={() => setDeployToTile(false)}
+                className={`px-2 py-0.5 rounded text-[10px] ${!deployToTile ? 'bg-blue-800 text-blue-200 font-bold' : 'bg-gray-700 text-gray-500 hover:bg-gray-600'}`}>
+                ⚔️ 말 ({piece.troops}/{maxTroops})
+              </button>
             </div>
             <div className="grid grid-cols-4 gap-1 mb-2">
               {troopTypes.map(t => {
@@ -149,8 +161,8 @@ export default function BuildModal({ state, dispatch }: Props) {
             {selectedTroop && (() => {
               const uc = unitCost(selectedTroop);
               const maxByGold = Math.floor(gold / uc);
-              const maxByTroops = Math.max(0, maxTroops - (piece?.troops ?? 0));
-              const maxBuy = Math.min(maxByGold, maxByTroops);
+              const maxByTroops = deployToTile ? maxByGold : Math.min(maxByGold, Math.max(0, maxTroops - (piece?.troops ?? 0)));
+              const maxBuy = deployToTile ? maxByGold : maxByTroops;
               const safe = Math.min(buyAmt, maxBuy);
               return (
                 <div className="flex items-center gap-1.5 bg-gray-700 rounded p-2">
@@ -158,8 +170,11 @@ export default function BuildModal({ state, dispatch }: Props) {
                   <div className="flex-1 text-center font-bold text-sm">{safe}명</div>
                   <button onClick={() => setBuyAmt(a => Math.min(maxBuy, a + 1))} className="w-7 h-7 rounded bg-gray-600 hover:bg-gray-500 font-bold text-sm">+</button>
                   <button
-                    onClick={() => { dispatch({ type: 'BUY_TROOPS', pieceId: piece.id, troopType: selectedTroop, amount: safe }); setSelectedTroop(null); setBuyAmt(1); }}
-                    disabled={maxBuy <= 0}
+                    onClick={() => {
+                      dispatch({ type: 'BUY_TROOPS', pieceId: piece.id, troopType: selectedTroop, amount: safe, ...(deployToTile ? { tileId } : {}) });
+                      setSelectedTroop(null); setBuyAmt(1);
+                    }}
+                    disabled={maxBuy <= 0 || safe <= 0}
                     className="px-3 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded font-bold text-sm">
                     {uc * safe}g
                   </button>
@@ -173,18 +188,21 @@ export default function BuildModal({ state, dispatch }: Props) {
         <div className="flex flex-col gap-2 mb-3">
           {buildingTypes.map(type => {
             const data = BUILDING_DATA[type];
-            const canBuild = tile.building === null || tile.building === type;
-            const isMax = tile.building === type && tile.buildingLevel >= 3;
+            const level = tile.buildings?.[type] ?? 0;
+            const isMax = level >= 3;
             const cost = getBuildCost(tile, type, discount);
-            const level = tile.building === type ? tile.buildingLevel : 0;
             return (
               <button key={type}
                 onClick={() => dispatch({ type: 'BUILD', tileId, buildingType: type })}
-                disabled={!canBuild || isMax || gold < cost}
+                disabled={isMax || gold < cost}
                 className="flex items-center gap-3 px-3 py-2.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 rounded-lg transition-colors text-left">
                 <span className="text-xl">{icons[type]}</span>
                 <div className="flex-1">
-                  <div className="font-bold text-sm">{data.name[Math.max(0, level)]} {isMax && '(최대)'}</div>
+                  <div className="font-bold text-sm">
+                    {data.name[Math.max(0, level)]}
+                    {level > 0 && <span className="text-xs text-yellow-400 ml-1">Lv{level}</span>}
+                    {isMax && <span className="text-xs text-gray-400 ml-1">(최대)</span>}
+                  </div>
                   <div className="text-xs text-gray-400">{data.description}</div>
                 </div>
                 <div className="text-yellow-400 font-bold text-sm">{isMax ? '-' : `${cost}골드`}</div>
