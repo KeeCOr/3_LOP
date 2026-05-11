@@ -30,10 +30,13 @@ export default function DiceRoller({ result, dice1, dice2, bonusRoll, waiting, o
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevResult = useRef<number | null>(result);
+  const seenNull = useRef<boolean>(result === null);
 
   useEffect(() => {
-    if (result !== null && result !== prevResult.current) {
+    if (result === null) { seenNull.current = true; return; }
+    if (result !== null && (result !== prevResult.current || seenNull.current)) {
       prevResult.current = result;
+      seenNull.current = false;
       setRolling(true);
       setShowOverlay(true);
       if (hideTimer.current) clearTimeout(hideTimer.current);

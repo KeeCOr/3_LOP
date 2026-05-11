@@ -1,6 +1,7 @@
 'use client';
 import type { GameState, Piece, TroopType } from '@/lib/gameTypes';
 import { CHARACTERS, TROOP_DATA } from '@/lib/gameData';
+import { CHAR_IMAGE } from '@/lib/charImages';
 
 interface Props { state: GameState; piece: Piece; onClose: () => void; }
 
@@ -21,9 +22,13 @@ export default function PieceInfoModal({ piece, onClose }: Props) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-gray-900 rounded-xl p-5 min-w-[260px] text-white border border-gray-700" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className={`font-bold ${ownerColor}`}>{ownerLabel}</div>
-            <div className="text-sm text-gray-300">{charData.name} — {piece.id}</div>
+          <div className="flex items-center gap-3">
+            <img src={CHAR_IMAGE[piece.characterType]} alt={charData.name}
+              className="w-14 h-16 object-contain flex-none" />
+            <div>
+              <div className={`font-bold ${ownerColor}`}>{ownerLabel}</div>
+              <div className="text-sm text-gray-300">{charData.name}</div>
+            </div>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
         </div>

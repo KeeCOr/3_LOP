@@ -1,9 +1,17 @@
+import { useEffect } from 'react';
 import type { GameState } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 export default function EventModal({ state, dispatch }: Props) {
   const card = state.activeEvent!;
+  const needsAction = card.effect.kind === 'move_to_tile' || card.effect.kind === 'move_to_shop';
+
+  useEffect(() => {
+    if (needsAction) return;
+    const timer = setTimeout(() => dispatch({ type: 'APPLY_EVENT_CARD' }), 2000);
+    return () => clearTimeout(timer);
+  }, [needsAction, dispatch]);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">

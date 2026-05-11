@@ -1,4 +1,4 @@
-export type TroopType = 'swordsman' | 'archer' | 'cavalry' | 'spearman';
+export type TroopType = 'swordsman' | 'archer' | 'cavalry' | 'spearman' | 'assassin' | 'berserker';
 export type TroopComp = Partial<Record<TroopType, number>>;
 
 export type GamePhase = 'start' | 'board' | 'gameover';
@@ -14,29 +14,16 @@ export type TurnPhase =
   | 'event_card'
   | 'forced_sell'
   | 'end_turn'
-  | 'defend_chance'
   | 'choose_move_tile'
-  | 'mercenary';
+  | 'mercenary'
+  | 'choose_stop';
 
 export type TileType = 'start_p' | 'start_e' | 'land' | 'chance' | 'mercenary';
 export type PlayerType = 'player' | 'ai' | 'ai2' | 'ai3';
 export type Owner = PlayerType | 'neutral' | null;
-export type BuildingType = 'vault' | 'barracks' | 'fort';
-export type CharacterType = 'general' | 'knight' | 'merchant' | 'scout';
+export type BuildingType = 'vault' | 'barracks' | 'fort' | 'toll_gate';
+export type CharacterType = 'agitator' | 'warlock' | 'smuggler' | 'swindler' | 'cleric' | 'general' | 'pirate';
 export type Difficulty = 'easy' | 'normal' | 'hard';
-export type EquipmentType = 'sword' | 'armor' | 'banner' | 'boots';
-
-export interface Equipment {
-  id: string;
-  name: string;
-  type: EquipmentType;
-  attackBonus: number;
-  defenseBonus: number;
-  commandBonus: number;
-  moveBonus: number;
-  price: number;
-}
-
 export interface Piece {
   id: string;
   owner: PlayerType;
@@ -44,7 +31,6 @@ export interface Piece {
   position: number;
   troops: number;
   composition: TroopComp;
-  equipment: Equipment[];
   startTileIndex: number;
 }
 
@@ -57,6 +43,7 @@ export interface Tile {
   buildings: Partial<Record<BuildingType, number>>;
   landPrice: number;
   baseToll: number;
+  baseLapProduction: number;
 }
 
 export interface BattleRound {
@@ -65,6 +52,11 @@ export interface BattleRound {
   attackerDamage: number;
   defenderDamage: number;
   log: string;
+}
+
+export interface DragonState {
+  position: number;
+  troops: number;
 }
 
 export interface BattleState {
@@ -80,6 +72,7 @@ export interface BattleState {
   defenderDefense: number;
   rounds: BattleRound[];
   result: 'ongoing' | 'attacker_wins' | 'defender_wins';
+  isDragonBattle?: boolean;
 }
 
 export type CardEffectType =
@@ -96,13 +89,17 @@ export type CardEffectType =
   | { kind: 'move_to_tile' }
   | { kind: 'troop_boost'; costPerTroop: number; maxAmount: number }
   | { kind: 'defense_reinforce'; amount: number }
-  | { kind: 'defense_boost'; multiplier: number };
+  | { kind: 'defense_boost'; multiplier: number }
+  | { kind: 'garrison_reinforce'; amount: number }
+  | { kind: 'free_build' }
+  | { kind: 'dragon_summon' };
 
 export interface EventCard {
   id: string;
   type: 'chance' | 'community';
   text: string;
   effect: CardEffectType;
+  usablePhases: TurnPhase[];
 }
 
 export interface PlayerState {
@@ -115,11 +112,11 @@ export interface PlayerState {
   tollExemptTurns: number;
   tollDoubleLaps: number;
   buildDiscountLaps: number;
+  freeBuildNext: boolean;
   diceBonusTurns: number;
   diceBonusAmount: number;
   isHuman: boolean;
   name: string;
-  cardSlot: EventCard[];
   troopBuyCount: number;
   defenseBoostMultiplier: number;
 }
@@ -147,8 +144,13 @@ export interface GameState {
   activeDeployTileId: number | null;
   winner: PlayerType | null;
   log: string[];
-  lapBonusAnim: { gold: number; troops: number; tileProduction: number; tileBreakdown: Partial<Record<TroopType, number>> } | null;
+  lapBonusAnim: { gold: number; troops: number; tileProduction: number; tileBreakdown: Partial<Record<TroopType, number>>; tileDetails: Array<{ tileId: number; amount: number; troopType: TroopType }> } | null;
+  passCollectQueue: Array<{ tileId: number; troops: number; garrison: TroopComp }> | null;
+  tollPayAnim: { amount: number; to: string } | null;
   pendingBattleTileId: number | null;
   mercenaryResult: { troopType: TroopType; amount: number } | null;
   lapCount: number;
+  dragon: DragonState | null;
+  dragonPending: { summonAtLap: number } | null;
+  pendingStopTiles: Array<{ tileId: number }> | null;
 }

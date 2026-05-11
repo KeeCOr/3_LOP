@@ -33,7 +33,9 @@ export default function DeployModal({ state, dispatch }: Props) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-gray-900 rounded-xl p-6 min-w-[340px] text-white">
         <h2 className="text-xl font-bold text-green-400 mb-1">🏴 점령 성공! 수비대 배치</h2>
-        <p className="text-xs text-gray-400 mb-4">종류별로 배치할 병력을 선택하세요. 나머지는 이동 부대가 유지합니다.</p>
+        <div className="bg-green-900/30 border border-green-700/50 rounded-lg px-3 py-2 mb-3 text-xs text-green-300">
+          ⚔️ 검사 <span className="font-bold">5명</span>이 자동으로 먼저 배치되었습니다. 추가로 더 배치할 수 있습니다.
+        </div>
 
         <div className="flex flex-col gap-3 mb-4">
           {types.map(t => {

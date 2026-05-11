@@ -36,7 +36,7 @@ export function getBuildingDefenseBonus(tile: Tile): number {
   return BUILDING_DATA.fort.defenseBonus![level - 1];
 }
 
-export function getBuildCost(tile: Tile, type: 'vault' | 'barracks' | 'fort', discount = false): number {
+export function getBuildCost(tile: Tile, type: BuildingType, discount = false): number {
   const level = tile.buildings?.[type] ?? 0;
   if (level >= 3) return Infinity;
   const cost = BUILDING_DATA[type].cost[level];

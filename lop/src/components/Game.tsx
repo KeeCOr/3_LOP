@@ -35,9 +35,9 @@ function GameWithState({ initialState, onRestart }: { initialState: ReturnType<t
       aiTimerRef.current = setTimeout(() => dispatch({ type: 'BATTLE_FINISH' }), 800);
       return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
     }
-    aiTimerRef.current = setTimeout(() => dispatch(getAiAction(state)), 800);
+    aiTimerRef.current = setTimeout(() => dispatch(getAiAction(state)), 700);
     return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
-  }, [state]);
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state.phase === 'gameover') return <GameOver winner={state.winner!} onRestart={onRestart} />;
   return <Board state={state} dispatch={dispatch} />;

@@ -1,0 +1,35 @@
+{
+  "name": "lop",
+  "version": "0.4.0",
+  "description": "lop",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.pioneer.game",
+    "productName": "lop",
+    "copyright": "Copyright © 2026",
+    "win": {
+      "target": [
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico"
+    },
+    "portable": {
+      "artifactName": "lop_v0.4.0_portable.exe"
+    },
+    "files": [
+      "main.js",
+      "dist/**/*"
+    ],
+    "directories": {
+      "output": "C:\\Development\\3_LOP\\release"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}

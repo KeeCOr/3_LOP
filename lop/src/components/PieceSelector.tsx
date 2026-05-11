@@ -4,6 +4,7 @@ import { CHARACTERS, TROOP_DATA } from '@/lib/gameData';
 import { TILE_DEFINITIONS } from '@/lib/boardLayout';
 import { FACTION_COLORS } from '@/lib/factionColors';
 import type { TroopType } from '@/lib/gameTypes';
+import { CHAR_IMAGE } from '@/lib/charImages';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -26,9 +27,8 @@ export default function PieceSelector({ state, dispatch }: Props) {
               <button key={p.id}
                 onClick={() => dispatch({ type: 'SELECT_PIECE', pieceId: p.id })}
                 className={`flex items-center gap-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 border ${fc.border} rounded-xl transition-colors text-left`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm ${fc.badge} shrink-0`}>
-                  {CHARACTERS[p.characterType].name[0]}
-                </div>
+                <img src={CHAR_IMAGE[p.characterType]} alt={p.characterType}
+                  className="w-10 h-14 object-contain shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-sm">{CHARACTERS[p.characterType].name}</div>
                   <div className="text-[10px] text-gray-400">{tileDef?.label ?? `${p.position}번`}</div>

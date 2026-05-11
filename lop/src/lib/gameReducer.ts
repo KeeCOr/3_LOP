@@ -1,8 +1,8 @@
-import type { GameState, Piece, Tile, CharacterType, Difficulty, TroopComp, TroopType, PlayerState, PlayerType, EventCard, BattleState } from './gameTypes';
+import type { GameState, Piece, Tile, CharacterType, Difficulty, TroopComp, TroopType, PlayerState, PlayerType, EventCard, BattleState, DragonState, BuildingType } from './gameTypes';
 import { LAND_INDICES, PLAYER_START, AI_START, nextPosition, didPassStart } from './boardLayout';
-import { CHARACTERS, TROOP_DATA, LAP_TROOP_BONUS, LAP_GOLD_BONUS, LAP_LAND_PRODUCTION, TROOP_PRICE_SCALE, nextHireCost, CHANCE_CARDS } from './gameData';
+import { CHARACTERS, TROOP_DATA, LAP_TROOP_BONUS, LAP_GOLD_BONUS, TROOP_PRICE_SCALE, nextHireCost, CHANCE_CARDS } from './gameData';
 import { getToll, getLapIncome, getLapTroops, calcTax, getBuildCost, getBuildingAttackBonus, getBuildingDefenseBonus } from './economyUtils';
-import { runFullBattle, getBattleAttack, getBattleDefense, getGarrisonAttack, getGarrisonDefense, counterMultiplier } from './battleEngine';
+import { runFullBattle, getBattleAttack, getBattleDefense, getGarrisonAttack, getGarrisonDefense } from './battleEngine';
 
 const AI2_START = 4;
 const AI3_START = 11;
@@ -61,6 +61,35 @@ function addToComp(comp: TroopComp, type: TroopType, amount: number): TroopComp 
   return { ...comp, [type]: (comp[type] ?? 0) + amount };
 }
 
+function removeFromComp(comp: TroopComp, n: number): TroopComp {
+  const result = { ...comp };
+  let remaining = n;
+  for (const t of (['swordsman', 'archer', 'cavalry', 'spearman'] as TroopType[])) {
+    const cur = result[t] ?? 0;
+    if (cur <= 0) continue;
+    const remove = Math.min(cur, remaining);
+    result[t] = cur - remove;
+    remaining -= remove;
+    if (remaining <= 0) break;
+  }
+  return result;
+}
+
+const TROOP_TYPES: TroopType[] = ['swordsman', 'archer', 'cavalry', 'spearman'];
+function randomTroopType(): TroopType {
+  return TROOP_TYPES[Math.floor(Math.random() * TROOP_TYPES.length)];
+}
+
+function randomGarrison(troops: number, numTypes = 1): TroopComp {
+  if (troops === 0) return {};
+  const shuffled = [...TROOP_TYPES].sort(() => Math.random() - 0.5);
+  if (numTypes === 1 || troops < 2) {
+    return { [shuffled[0]]: troops } as TroopComp;
+  }
+  const first = Math.max(1, Math.floor(troops * (0.5 + Math.random() * 0.3)));
+  return { [shuffled[0]]: first, [shuffled[1]]: troops - first } as TroopComp;
+}
+
 function dominantTroopType(comp: TroopComp): TroopType {
   const entries = Object.entries(comp) as [TroopType, number][];
   if (entries.length === 0) return 'swordsman';
@@ -68,23 +97,25 @@ function dominantTroopType(comp: TroopComp): TroopType {
 }
 
 function createPiece(id: string, owner: PlayerType, characterType: CharacterType, startIndex: number): Piece {
-  return { id, owner, characterType, position: startIndex, troops: 10, composition: { swordsman: 10 }, equipment: [], startTileIndex: startIndex };
+  return { id, owner, characterType, position: startIndex, troops: 20, composition: { swordsman: 15, archer: 5 }, startTileIndex: startIndex };
 }
 
 function makePS(id: PlayerType, isHuman: boolean, name: string, goldBonus = 0): PlayerState {
   return {
     id, gold: 1500 + goldBonus, hireCost: 0, pieceCount: 1, attackBoostActive: false,
-    taxExemptTurns: 0, tollExemptTurns: 0, tollDoubleLaps: 0, buildDiscountLaps: 0,
-    diceBonusTurns: 0, diceBonusAmount: 0, isHuman, name, cardSlot: [],
+    taxExemptTurns: 0, tollExemptTurns: 0, tollDoubleLaps: 0, buildDiscountLaps: 0, freeBuildNext: false,
+    diceBonusTurns: 0, diceBonusAmount: 0, isHuman, name,
     troopBuyCount: 0, defenseBoostMultiplier: 1,
   };
 }
 
 // Tier 1 (cheap): 1,2 | Tier 2 (mid): 4,6,8 | Tier 3 (premium): 9,11,13
 const TILE_TIER: Record<number, 1 | 2 | 3> = { 1: 1, 2: 1, 4: 2, 6: 2, 8: 2, 9: 3, 11: 3, 13: 3 };
-const TIER_PRICE = { 1: 200, 2: 400, 3: 650 };
-const TIER_BASE_TOLL = { 1: 80, 2: 160, 3: 260 };
-const TIER_TROOP_RANGE: Record<1|2|3, [number,number]> = { 1: [3,6], 2: [5,9], 3: [7,12] };
+const TIER_TROOP_RANGE: Record<1|2|3, [number,number]> = { 1: [3,3], 2: [3,5], 3: [5,7] };
+const TIER_LAP_PROD_RANGE: Record<1|2|3, [number,number]> = { 1: [1,2], 2: [2,4], 3: [3,6] };
+// Tier 1: always 1 type, Tier 2: randomly 1 or 2 types, Tier 3: always 2 types
+const TIER_TYPES_COUNT: Record<1|2|3, () => number> = { 1: () => 1, 2: () => (Math.random() < 0.5 ? 1 : 2), 3: () => 2 };
+const CAPTURE_BASE_TROOPS = 5;
 
 const START_INITIAL_TROOPS = 12;
 const START_BASE_TOLL = 350;
@@ -99,8 +130,12 @@ function createInitialTiles(playerCount: 2 | 3 | 4 = 2): Tile[] {
     const hasTroops = !!range && !isAi2Start && !isAi3Start;
     const troops = isStartTile ? START_INITIAL_TROOPS
       : hasTroops ? Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0] : 0;
-    const landPrice = tier ? TIER_PRICE[tier] : 0;
-    const baseToll = isStartTile ? START_BASE_TOLL : (tier ? TIER_BASE_TOLL[tier] : 0);
+    const lapProdRange = tier ? TIER_LAP_PROD_RANGE[tier] : null;
+    const baseLapProduction = isStartTile ? 2
+      : lapProdRange ? Math.floor(Math.random() * (lapProdRange[1] - lapProdRange[0] + 1)) + lapProdRange[0]
+      : 0;
+    const landPrice = tier ? baseLapProduction * 180 : 0;
+    const baseToll = isStartTile ? START_BASE_TOLL : (tier ? baseLapProduction * 80 : 0);
     const tileType: import('./gameTypes').TileType =
       LAND_INDICES.includes(i) ? 'land' :
       i === 0 ? 'start_p' :
@@ -112,24 +147,21 @@ function createInitialTiles(playerCount: 2 | 3 | 4 = 2): Tile[] {
       isAi2Start ? 'ai2' :
       isAi3Start ? 'ai3' :
       (troops > 0 ? 'neutral' : null);
-    const garrison = troops > 0
-      ? { spearman: Math.ceil(troops * 0.4), swordsman: Math.floor(troops * 0.6) }
-      : {};
+    const garrison = tier ? randomGarrison(troops, TIER_TYPES_COUNT[tier]()) : randomGarrison(troops);
     return {
       id: i, type: tileType, owner: startOwner, troops, garrison,
-      buildings: {}, landPrice, baseToll,
+      buildings: {}, landPrice, baseToll, baseLapProduction,
     } as Tile;
   });
 }
 
 export function createInitialState(characterType: CharacterType, difficulty: Difficulty, playerCount: 2 | 3 | 4 = 2): GameState {
-  const merchantBonus = characterType === 'merchant' ? 200 : 0;
   const pieces: Piece[] = [
     createPiece('p0', 'player', characterType, PLAYER_START),
     createPiece('e0', 'ai', 'general', AI_START),
   ];
-  if (playerCount >= 3) pieces.push(createPiece('e1', 'ai2', 'knight', AI2_START));
-  if (playerCount >= 4) pieces.push(createPiece('e2', 'ai3', 'merchant', AI3_START));
+  if (playerCount >= 3) pieces.push(createPiece('e1', 'ai2', 'pirate', AI2_START));
+  if (playerCount >= 4) pieces.push(createPiece('e2', 'ai3', 'warlock', AI3_START));
 
   return {
     phase: 'board',
@@ -137,7 +169,7 @@ export function createInitialState(characterType: CharacterType, difficulty: Dif
     currentTurn: 'player',
     difficulty,
     playerCount,
-    player: makePS('player', true, '플레이어', merchantBonus),
+    player: makePS('player', true, '플레이어'),
     ai: makePS('ai', false, 'AI 1'),
     ai2: playerCount >= 3 ? makePS('ai2', false, 'AI 2') : null,
     ai3: playerCount >= 4 ? makePS('ai3', false, 'AI 3') : null,
@@ -155,9 +187,14 @@ export function createInitialState(characterType: CharacterType, difficulty: Dif
     winner: null,
     log: [],
     lapBonusAnim: null,
+    passCollectQueue: null,
+    tollPayAnim: null,
     pendingBattleTileId: null,
     mercenaryResult: null,
     lapCount: 0,
+    dragon: null,
+    dragonPending: null,
+    pendingStopTiles: null,
   };
 }
 
@@ -176,19 +213,20 @@ export type GameAction =
   | { type: 'COLLECT_TROOPS'; tileId: number; amount?: number }
   | { type: 'BATTLE_FINISH' }
   | { type: 'DEPLOY_TROOPS'; tileId: number; garrison: TroopComp }
-  | { type: 'BUILD'; tileId: number; buildingType: 'vault' | 'barracks' | 'fort' }
+  | { type: 'BUILD'; tileId: number; buildingType: BuildingType }
   | { type: 'SKIP_BUILD' }
   | { type: 'BUY_TROOPS'; pieceId: string; troopType: TroopType; amount: number; tileId?: number }
   | { type: 'BUY_PIECE'; characterType: CharacterType }
   | { type: 'OPEN_SHOP' }
   | { type: 'CLOSE_SHOP' }
   | { type: 'APPLY_EVENT_CARD' }
-  | { type: 'USE_EVENT_CARD'; cardId: string }
   | { type: 'CLEAR_LAP_BONUS' }
   | { type: 'BUY_MERCENARY' }
-  | { type: 'TAKE_MERCENARY_TO_PIECE' }
-  | { type: 'DEPLOY_MERCENARY_TO_TILE'; tileId: number }
   | { type: 'CLOSE_MERCENARY' }
+  | { type: 'CONFIRM_PASS_COLLECT'; amount?: number }
+  | { type: 'SKIP_PASS_COLLECT' }
+  | { type: 'STOP_AT_TILE'; tileId: number }
+  | { type: 'CONTINUE_MOVE' }
   | { type: 'END_TURN' };
 
 // Extracted battle setup helper
@@ -207,8 +245,6 @@ function executeBattle(state: GameState, tileId: number): GameState {
   const combinedGarrison = defendingPiece ? mergeComp(tile.garrison, defendingPiece.composition) : tile.garrison;
 
   const atkBoost = getPS(state, owner).attackBoostActive ? 1.5 : 1;
-  const atkCounterMod = counterMultiplier(piece.composition, piece.troops, combinedGarrison, combinedDefTroops);
-  const defCounterMod = counterMultiplier(combinedGarrison, combinedDefTroops, piece.composition, piece.troops);
   const defBoostMult = defenderOwner === 'player' ? state.player.defenseBoostMultiplier : 1;
 
   const setup: BattleState = {
@@ -218,9 +254,9 @@ function executeBattle(state: GameState, tileId: number): GameState {
     attackerTroops: piece.troops,
     defenderTroops: combinedDefTroops,
     defenderTroopsFromPiece: defendingPiece?.troops ?? 0,
-    attackerAttack: getBattleAttack(piece) * atkBoost * atkCounterMod,
+    attackerAttack: getBattleAttack(piece, 1, !!defendingPiece) * atkBoost,
     attackerDefense: getBattleDefense(piece),
-    defenderAttack: getGarrisonAttack(combinedGarrison, combinedDefTroops, getBuildingAttackBonus(tile)) * defCounterMod,
+    defenderAttack: getGarrisonAttack(combinedGarrison, combinedDefTroops, getBuildingAttackBonus(tile)),
     defenderDefense: getGarrisonDefense(combinedGarrison, combinedDefTroops, getBuildingDefenseBonus(tile)) * defBoostMult,
     rounds: [],
     result: 'ongoing' as const,
@@ -234,6 +270,38 @@ function executeBattle(state: GameState, tileId: number): GameState {
     activeTileAction: null,
     pendingBattleTileId: null,
     log: [...state.log, `전투 시작!${logExtra}`],
+  }, owner, { attackBoostActive: false });
+}
+
+const DRAGON_ATK = 1.8;
+const DRAGON_DEF = 1.2;
+
+function executeDragonBattle(state: GameState): GameState {
+  const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
+  const dragon = state.dragon!;
+  const owner = state.currentTurn;
+  const atkBoost = getPS(state, owner).attackBoostActive ? 1.5 : 1;
+  const setup: BattleState = {
+    attackerPieceId: piece.id,
+    defenderTileId: dragon.position,
+    defenderPieceId: null,
+    attackerTroops: piece.troops,
+    defenderTroops: dragon.troops,
+    defenderTroopsFromPiece: 0,
+    attackerAttack: getBattleAttack(piece, 1, true) * atkBoost,
+    attackerDefense: getBattleDefense(piece),
+    defenderAttack: DRAGON_ATK,
+    defenderDefense: DRAGON_DEF,
+    rounds: [],
+    result: 'ongoing' as const,
+    isDragonBattle: true,
+  };
+  const finished = runFullBattle(setup);
+  return setPS({
+    ...state,
+    activeBattle: finished,
+    turnPhase: 'battle',
+    log: [...state.log, `🐉 드래곤 전투 시작! (드래곤 ${dragon.troops}명)`],
   }, owner, { attackBoostActive: false });
 }
 
@@ -298,9 +366,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const piece = state.pieces.find(p => p.id === action.pieceId);
       if (!piece) return state;
       const dice = state.diceResult!;
-      const charMoveBonus = CHARACTERS[piece.characterType].moveBonus;
-      const equipMoveBonus = piece.equipment.reduce((acc, e) => acc + e.moveBonus, 0);
-      const steps = dice + charMoveBonus + equipMoveBonus;
+      const steps = dice;
       const newPos = nextPosition(piece.position, steps);
       const owner = state.currentTurn;
       const passedStart = didPassStart(piece.position, steps, piece.startTileIndex);
@@ -314,76 +380,142 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       if (passedStart) {
         const lapIncome = state.tiles.filter(t => t.owner === owner).reduce((sum, t) => sum + getLapIncome(t), 0);
-        const lapTroops = state.tiles.filter(t => t.owner === owner).reduce((sum, t) => sum + getLapTroops(t), 0);
-        const maxTroops = CHARACTERS[piece.characterType].maxTroops;
         const ownerPS = getPS(newState, owner);
         newState = setPS(newState, owner, { gold: ownerPS.gold + LAP_GOLD_BONUS + lapIncome });
-
-        // Piece troop bonus
-        newState = {
-          ...newState,
-          pieces: newState.pieces.map(p => {
-            if (p.id !== piece.id) return p;
-            const bonus = Math.min(maxTroops - p.troops, LAP_TROOP_BONUS + lapTroops);
-            return { ...p, troops: p.troops + bonus, composition: addToComp(p.composition, 'swordsman', bonus) };
-          }),
-        };
 
         // Per-land production (includes start tiles as premium land)
         let totalTileProduction = 0;
         const tileBreakdown: TroopComp = {};
+        const tileDetails: Array<{ tileId: number; amount: number; troopType: TroopType }> = [];
         newState = {
           ...newState,
           tiles: newState.tiles.map(t => {
             if (t.owner !== owner || (t.type !== 'land' && t.type !== 'start_p' && t.type !== 'start_e') || t.troops === 0) return t;
-            const produce = LAP_LAND_PRODUCTION + getLapTroops(t);
+            const produce = t.baseLapProduction + getLapTroops(t);
             totalTileProduction += produce;
             const dominant = dominantTroopType(t.garrison);
             tileBreakdown[dominant] = (tileBreakdown[dominant] ?? 0) + produce;
+            tileDetails.push({ tileId: t.id, amount: produce, troopType: dominant });
             return { ...t, troops: t.troops + produce, garrison: addToComp(t.garrison, dominant, produce) };
           }),
-          log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 병력 +${LAP_TROOP_BONUS + lapTroops}, 영토 병력 생산 +${totalTileProduction}`],
+          log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 영토 병력 생산 +${totalTileProduction}`],
         };
+
+        // Character lap skill
+        const lapPiece = newState.pieces.find(p => p.id === piece.id)!;
+        switch (lapPiece.characterType) {
+          case 'agitator': {
+            const t = randomTroopType();
+            newState = { ...newState,
+              pieces: newState.pieces.map(p => p.id === lapPiece.id
+                ? { ...p, troops: p.troops + 2, composition: addToComp(p.composition, t, 2) } : p),
+              log: [...newState.log, `선동가 스킬: ${TROOP_DATA[t].name} 2명 합류`] };
+            break;
+          }
+          case 'warlock': {
+            const enemies = newState.pieces.filter(p => p.owner !== owner && p.troops > 0);
+            if (enemies.length > 0) {
+              const target = enemies[Math.floor(Math.random() * enemies.length)];
+              const kill = Math.min(2, target.troops);
+              newState = { ...newState,
+                pieces: newState.pieces.map(p => p.id === target.id
+                  ? { ...p, troops: p.troops - kill, composition: removeFromComp(p.composition, kill) } : p),
+                log: [...newState.log, `흑마술사 스킬: ${getPS(newState, target.owner).name} 병력 ${kill}명 저주`] };
+            }
+            break;
+          }
+          case 'smuggler': {
+            const ps2 = getPS(newState, owner);
+            newState = setPS({ ...newState, log: [...newState.log, `밀수꾼 스킬: 골드 +200`] }, owner, { gold: ps2.gold + 200 });
+            break;
+          }
+          case 'cleric': {
+            const ownedTiles = newState.tiles.filter(t => t.owner === owner && (t.type === 'land' || t.type === 'start_p' || t.type === 'start_e'));
+            if (ownedTiles.length > 0) {
+              // Distribute 3 troops of random types across random owned tiles
+              const blessLog: string[] = [];
+              let updatedTiles = [...newState.tiles];
+              for (let i = 0; i < 3; i++) {
+                const tgt = ownedTiles[Math.floor(Math.random() * ownedTiles.length)];
+                const t = randomTroopType();
+                updatedTiles = updatedTiles.map(tile => tile.id === tgt.id
+                  ? { ...tile, troops: tile.troops + 1, garrison: addToComp(tile.garrison, t, 1) } : tile);
+                blessLog.push(`${tgt.id}번→${TROOP_DATA[t].name}`);
+              }
+              newState = { ...newState, tiles: updatedTiles,
+                log: [...newState.log, `종교인 스킬: 영토에 병사 3명 분배 (${blessLog.join(', ')})`] };
+            }
+            break;
+          }
+          default: break;
+        }
 
         // Show lap bonus animation for player
         if (owner === 'player') {
-          newState = { ...newState, lapBonusAnim: { gold: LAP_GOLD_BONUS + lapIncome, troops: LAP_TROOP_BONUS + lapTroops, tileProduction: totalTileProduction, tileBreakdown } };
+          newState = { ...newState, lapBonusAnim: { gold: LAP_GOLD_BONUS + lapIncome, troops: 0, tileProduction: totalTileProduction, tileBreakdown, tileDetails } };
         }
         // Increment global lap count (raises tolls)
         newState = { ...newState, lapCount: newState.lapCount + 1 };
-      }
 
-      // Auto-collect from own tiles passed through (not the landing tile)
-      const prevPos = piece.position;
-      let totalCollected = 0;
-      let collectedComp: TroopComp = {};
-      const passedTileIds: Set<number> = new Set();
-      for (let i = 1; i < steps; i++) passedTileIds.add(nextPosition(prevPos, i));
-      for (const tileId of passedTileIds) {
-        const t = newState.tiles.find(tile => tile.id === tileId);
-        if (t && t.owner === owner && t.troops > 0) {
-          totalCollected += t.troops;
-          collectedComp = mergeComp(collectedComp, t.garrison);
+        // Dragon spawn check
+        if (newState.dragonPending && newState.lapCount >= newState.dragonPending.summonAtLap && !newState.dragon) {
+          const spawnTile = newState.tiles
+            .filter(t => t.owner && t.owner !== 'neutral' && t.type === 'land' && t.owner !== owner)
+            .sort((a, b) => b.landPrice - a.landPrice)[0]
+            ?? newState.tiles.filter(t => t.type === 'land').sort((a, b) => b.landPrice - a.landPrice)[0];
+          if (spawnTile) {
+            newState = {
+              ...newState,
+              dragon: { position: spawnTile.id, troops: 30 },
+              dragonPending: null,
+              log: [...newState.log, `🐉 드래곤이 ${spawnTile.id}번 땅에 출현했다!`],
+            };
+          }
         }
       }
-      if (totalCollected > 0) {
+
+      // Collect info about owned tiles passed through (not the landing tile)
+      const prevPos = piece.position;
+      const passedTileIds: Set<number> = new Set();
+      for (let i = 1; i < steps; i++) passedTileIds.add(nextPosition(prevPos, i));
+      const ownedPassedIds: number[] = [];
+      const passQueue: Array<{ tileId: number; troops: number; garrison: TroopComp }> = [];
+      for (const tileId of passedTileIds) {
+        const t = newState.tiles.find(tile => tile.id === tileId);
+        if (t && t.owner === owner) {
+          ownedPassedIds.push(tileId);
+          if (t.troops > 0) passQueue.push({ tileId, troops: t.troops, garrison: { ...t.garrison } });
+        }
+      }
+      if (owner === 'player' && ownedPassedIds.length > 0) {
+        // Player: ask if they want to stop at a passed owned tile
+        return { ...newState, pendingStopTiles: ownedPassedIds.map(id => ({ tileId: id })), turnPhase: 'choose_stop' };
+      } else if (owner !== 'player' && passQueue.length > 0) {
+        // AI: auto-collect up to maxTroops
+        const totalCollected = passQueue.reduce((sum, q) => sum + q.troops, 0);
         const maxTr = CHARACTERS[piece.characterType].maxTroops;
         const canCollect = Math.min(totalCollected, maxTr - (newState.pieces.find(p => p.id === piece.id)?.troops ?? 0));
         if (canCollect > 0) {
+          let collectedComp: TroopComp = {};
+          for (const q of passQueue) collectedComp = mergeComp(collectedComp, q.garrison);
           newState = {
             ...newState,
             pieces: newState.pieces.map(p => p.id === piece.id
               ? { ...p, troops: p.troops + canCollect, composition: mergeComp(p.composition, scaleComp(collectedComp, canCollect)) }
-              : p
-            ),
+              : p),
             tiles: newState.tiles.map(t =>
               passedTileIds.has(t.id) && t.owner === owner && t.troops > 0
                 ? { ...t, troops: 0, garrison: {} }
-                : t
-            ),
+                : t),
             log: [...newState.log, `이동 중 영토 통과 → ${canCollect}명 자동 징집`],
           };
         }
+      }
+
+      // Swindler skill: dice = 0 → +200 gold
+      if (state.diceResult === 0 && piece.characterType === 'swindler') {
+        const ps2 = getPS(newState, owner);
+        newState = setPS({ ...newState, log: [...newState.log, `사기꾼 스킬: 주사위 0! 골드 +200`] }, owner, { gold: ps2.gold + 200 });
       }
 
       return handleTileLanding(newState, newPos, piece.id);
@@ -392,16 +524,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'CHOOSE_FIGHT': {
       const tile = state.tiles.find(t => t.id === action.tileId)!;
       const owner = state.currentTurn;
-
-      // If player's tile is being attacked by AI, give player a chance to use defense cards
-      if (tile.owner === 'player' && owner !== 'player') {
-        const defenseCards = state.player.cardSlot.filter(c =>
-          c.effect.kind === 'defense_reinforce' || c.effect.kind === 'defense_boost'
-        );
-        if (defenseCards.length > 0) {
-          return { ...state, pendingBattleTileId: action.tileId, turnPhase: 'defend_chance', activeTileAction: null };
-        }
-      }
 
       return executeBattle(state, action.tileId);
     }
@@ -428,50 +550,77 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const ownerPS = getPS(state, owner);
       const MERC_COST = 400;
       if (ownerPS.gold < MERC_COST || state.mercenaryResult !== null) return state;
-      const troopTypes: TroopType[] = ['swordsman', 'archer', 'cavalry', 'spearman'];
-      const troopType = troopTypes[Math.floor(Math.random() * troopTypes.length)];
-      const amount = Math.floor(Math.random() * 3) + 2; // 2-4
-      return setPS({
-        ...state,
-        mercenaryResult: { troopType, amount },
-        log: [...state.log, `${ownerPS.name} 용병 ${TROOP_DATA[troopType].name} ${amount}명 계약 (400골드)`],
-      }, owner, { gold: ownerPS.gold - MERC_COST });
-    }
-
-    case 'TAKE_MERCENARY_TO_PIECE': {
-      const owner = state.currentTurn;
-      const result = state.mercenaryResult!;
+      const troopPool: TroopType[] = ['swordsman', 'archer', 'cavalry', 'spearman', 'swordsman', 'archer', 'cavalry', 'spearman', 'assassin', 'berserker'];
+      const troopType = troopPool[Math.floor(Math.random() * troopPool.length)];
+      const r = Math.random();
+      const amount = Math.floor(r * r * r * r * 7) + 2;
+      // Auto-join the piece immediately
       const piece = state.pieces.find(p => p.owner === owner && p.id === state.selectedPieceId)
         ?? state.pieces.find(p => p.owner === owner && p.troops > 0)
         ?? state.pieces.find(p => p.owner === owner)!;
-      const maxTroops = CHARACTERS[piece.characterType].maxTroops;
-      const canAdd = Math.min(result.amount, maxTroops - piece.troops);
-      return {
+      return setPS({
         ...state,
         pieces: state.pieces.map(p => p.id === piece.id
-          ? { ...p, troops: p.troops + canAdd, composition: addToComp(p.composition, result.troopType, canAdd) }
+          ? { ...p, troops: p.troops + amount, composition: addToComp(p.composition, troopType, amount) }
           : p),
-        mercenaryResult: null,
-        turnPhase: 'end_turn',
-        log: [...state.log, `용병 ${canAdd}명 말에 합류`],
-      };
-    }
-
-    case 'DEPLOY_MERCENARY_TO_TILE': {
-      const result = state.mercenaryResult!;
-      return {
-        ...state,
-        tiles: state.tiles.map(t => t.id === action.tileId
-          ? { ...t, troops: t.troops + result.amount, garrison: addToComp(t.garrison, result.troopType, result.amount) }
-          : t),
-        mercenaryResult: null,
-        turnPhase: 'end_turn',
-        log: [...state.log, `용병 ${result.amount}명 ${action.tileId}번 영토에 배치`],
-      };
+        mercenaryResult: { troopType, amount },
+        log: [...state.log, `${ownerPS.name} 용병 ${TROOP_DATA[troopType].name} ${amount}명 계약 → 말에 합류`],
+      }, owner, { gold: ownerPS.gold - MERC_COST });
     }
 
     case 'CLOSE_MERCENARY': {
       return { ...state, turnPhase: 'end_turn', mercenaryResult: null };
+    }
+
+    case 'CONFIRM_PASS_COLLECT': {
+      const queue = state.passCollectQueue!;
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
+      const maxTr = CHARACTERS[piece.characterType].maxTroops;
+      const totalAvailable = queue.reduce((sum, q) => sum + q.troops, 0);
+      const maxCollect = Math.min(totalAvailable, maxTr - piece.troops);
+      const canCollect = Math.min(action.amount ?? maxCollect, maxCollect);
+      let newState = { ...state, passCollectQueue: null };
+      if (canCollect > 0) {
+        // Take from tiles in order until canCollect is reached
+        let remaining = canCollect;
+        const tileChanges = new Map<number, number>();
+        let collectedComp: TroopComp = {};
+        for (const q of queue) {
+          if (remaining <= 0) break;
+          const take = Math.min(q.troops, remaining);
+          tileChanges.set(q.tileId, take);
+          collectedComp = mergeComp(collectedComp, scaleComp(q.garrison, take));
+          remaining -= take;
+        }
+        newState = {
+          ...newState,
+          pieces: newState.pieces.map(p => p.id === piece.id
+            ? { ...p, troops: p.troops + canCollect, composition: mergeComp(p.composition, collectedComp) }
+            : p),
+          tiles: newState.tiles.map(t => {
+            const taken = tileChanges.get(t.id);
+            if (taken === undefined) return t;
+            const newTroops = t.troops - taken;
+            return { ...t, troops: newTroops, garrison: newTroops === 0 ? {} : scaleComp(t.garrison, newTroops) };
+          }),
+          log: [...newState.log, `이동 중 영토 통과 → ${canCollect}명 징집`],
+        };
+      }
+      return newState;
+    }
+
+    case 'SKIP_PASS_COLLECT':
+      return { ...state, passCollectQueue: null };
+
+    case 'STOP_AT_TILE': {
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
+      const newPieces = state.pieces.map(p => p.id === piece.id ? { ...p, position: action.tileId } : p);
+      return handleTileLanding({ ...state, pendingStopTiles: null, pieces: newPieces }, action.tileId, piece.id);
+    }
+
+    case 'CONTINUE_MOVE': {
+      const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
+      return handleTileLanding({ ...state, pendingStopTiles: null }, piece.position, piece.id);
     }
 
     case 'BATTLE_FINISH': {
@@ -486,6 +635,42 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Reset defense boost after battle
       let stateAfterBattle = setPS(state, 'player', { defenseBoostMultiplier: 1 });
 
+      // Dragon battle aftermath
+      if (battle.isDragonBattle) {
+        const dragon = state.dragon!;
+        if (battle.result === 'attacker_wins') {
+          const scaledComp = scaleComp(attackerPiece.composition, battle.attackerTroops);
+          const rewardGold = 800;
+          const rewardType = randomTroopType();
+          const rewardTroops = 5;
+          let victoryState: GameState = {
+            ...stateAfterBattle,
+            activeBattle: null,
+            dragon: null,
+            pieces: stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
+              ? { ...p, troops: battle.attackerTroops + rewardTroops, composition: addToComp(scaledComp, rewardType, rewardTroops) }
+              : p),
+            turnPhase: 'end_turn' as const,
+            log: [...stateAfterBattle.log, `🐉 드래곤 처치! 보상: 골드 +${rewardGold}, ${TROOP_DATA[rewardType].name} ${rewardTroops}명`],
+          };
+          victoryState = setPS(victoryState, owner, { gold: getPS(victoryState, owner).gold + rewardGold });
+          return victoryState;
+        } else {
+          // Dragon wins — attacker retreats, dragon troops updated
+          const newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
+            ? { ...p, troops: 0, composition: {}, position: attackerPiece.startTileIndex }
+            : p);
+          return {
+            ...stateAfterBattle,
+            activeBattle: null,
+            dragon: { ...dragon, troops: battle.defenderTroops },
+            pieces: newPieces,
+            turnPhase: 'end_turn' as const,
+            log: [...stateAfterBattle.log, `🐉 드래곤에게 패배! 병력이 전멸했다.`],
+          };
+        }
+      }
+
       if (battle.result === 'attacker_wins') {
         const scaledComp = scaleComp(attackerPiece.composition, battle.attackerTroops);
         let newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
@@ -497,23 +682,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             : p);
         }
         const capturedPiece = !!defendingPiece && battle.defenderTroopsFromPiece > 0;
-        // Auto-produce base troops on capture regardless of deployment
-        const baseGarrison: TroopComp = { swordsman: LAP_LAND_PRODUCTION };
+        // Auto-deploy base troops on capture, player can add more in deploy phase
+        const baseGarrison: TroopComp = { swordsman: CAPTURE_BASE_TROOPS };
         const tilesWithBase = stateAfterBattle.tiles.map(t =>
           t.id === battle.defenderTileId
-            ? { ...t, owner, troops: LAP_LAND_PRODUCTION, garrison: baseGarrison }
+            ? { ...t, owner, troops: CAPTURE_BASE_TROOPS, garrison: baseGarrison }
             : t
         );
-        return {
+        let victoryState: GameState = {
           ...stateAfterBattle,
           activeBattle: null,
           pieces: newPieces,
           tiles: tilesWithBase,
           activeDeployTileId: battle.defenderTileId,
-          bonusRoll: capturedPiece,
+          bonusRoll: state.bonusRoll || capturedPiece,
           turnPhase: 'deploy' as const,
-          log: [...stateAfterBattle.log, `${getPS(state, owner).name} 전투 승리! ${battle.defenderTileId}번 땅 점령 (기본 ${LAP_LAND_PRODUCTION}명 배치됨)${capturedPiece ? ' · 보너스 턴!' : ''}`],
+          log: [...stateAfterBattle.log, `${getPS(state, owner).name} 전투 승리! ${battle.defenderTileId}번 땅 점령 (기본 ${CAPTURE_BASE_TROOPS}명 배치)${capturedPiece ? ' · 보너스 턴!' : ''}`],
         };
+        // Character battle victory skills
+        if (attackerPiece.characterType === 'general') {
+          const t = randomTroopType();
+          victoryState = { ...victoryState,
+            pieces: victoryState.pieces.map(p => p.id === attackerPiece.id
+              ? { ...p, troops: p.troops + 1, composition: addToComp(p.composition, t, 1) } : p),
+            log: [...victoryState.log, `장군 스킬: 전리품 ${TROOP_DATA[t].name} 1명 획득`] };
+        } else if (attackerPiece.characterType === 'pirate') {
+          const ps2 = getPS(victoryState, owner);
+          victoryState = setPS({ ...victoryState, log: [...victoryState.log, `해적 스킬: 약탈 골드 +100`] }, owner, { gold: ps2.gold + 100 });
+        }
+        return victoryState;
       } else {
         const initialDefTotal = battle.rounds.length > 0
           ? battle.rounds[0].defenderTroopsBefore
@@ -618,16 +815,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const tollDouble = tileOwnerPS ? tileOwnerPS.tollDoubleLaps > 0 : false;
       const toll = exempt ? 0 : getToll(tile, tollDouble, state.lapCount);
       if (!exempt && ownerPS.gold < toll) {
-        const ownedLands = state.tiles.filter(t => t.owner === owner && t.type === 'land');
-        if (ownedLands.length > 0) {
-          return {
-            ...state,
-            activeTileAction: action.tileId,
-            turnPhase: 'forced_sell' as const,
-            log: [...state.log, `통행세 ${toll}골드 부족! 보유 땅을 팔아야 합니다.`],
-          };
-        }
+        return {
+          ...state,
+          activeTileAction: action.tileId,
+          turnPhase: 'forced_sell' as const,
+          log: [...state.log, `통행세 ${toll}골드 부족! 보유 땅을 팔아야 합니다.`],
+        };
       }
+      const toName = tileOwnerPS ? tileOwnerPS.name : null;
       let newState = setPS(state, owner, {
         gold: ownerPS.gold - toll,
         tollExemptTurns: Math.max(0, ownerPS.tollExemptTurns - 1),
@@ -635,7 +830,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (tileOwnerPS && tileOwner !== owner) {
         newState = setPS(newState, tileOwner as PlayerType, { gold: getPS(newState, tileOwner as PlayerType).gold + toll });
       }
-      newState = { ...newState, activeTileAction: null, turnPhase: 'end_turn', log: [...newState.log, `통행세 ${toll}골드 납부`] };
+      newState = {
+        ...newState,
+        activeTileAction: null,
+        turnPhase: 'end_turn',
+        tollPayAnim: toName && toll > 0 ? { amount: toll, to: toName } : null,
+        log: [...newState.log, `통행세 ${toll}골드 납부`],
+      };
       return checkBankruptcy(newState);
     }
 
@@ -671,7 +872,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (tileOwnerPS && tileOwner !== owner) {
         newState = setPS(newState, tileOwner as PlayerType, { gold: getPS(newState, tileOwner as PlayerType).gold + toll });
       }
-      newState = { ...newState, activeTileAction: null, turnPhase: 'end_turn', log: [...newState.log, `통행세 ${toll}골드 납부 완료`] };
+      const toNameForced = tileOwnerPS ? tileOwnerPS.name : null;
+      newState = {
+        ...newState,
+        activeTileAction: null,
+        turnPhase: 'end_turn',
+        tollPayAnim: toNameForced && toll > 0 ? { amount: toll, to: toNameForced } : null,
+        log: [...newState.log, `통행세 ${toll}골드 납부 완료`],
+      };
       return checkBankruptcy(newState);
     }
 
@@ -708,14 +916,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const tile = state.tiles.find(t => t.id === action.tileId)!;
       const owner = state.currentTurn;
       const ownerPS = getPS(state, owner);
+      const isFree = ownerPS.freeBuildNext;
       const discount = ownerPS.buildDiscountLaps > 0;
-      const cost = getBuildCost(tile, action.buildingType, discount);
+      const cost = isFree ? 0 : getBuildCost(tile, action.buildingType, discount);
       if (ownerPS.gold < cost) return state;
       const newLevel = (tile.buildings?.[action.buildingType] ?? 0) + 1;
       const newTiles = state.tiles.map(t => t.id === action.tileId
         ? { ...t, buildings: { ...t.buildings, [action.buildingType]: newLevel } }
         : t);
-      return setPS({ ...state, tiles: newTiles, turnPhase: 'end_turn' as const }, owner, { gold: ownerPS.gold - cost });
+      return setPS({ ...state, tiles: newTiles, turnPhase: 'end_turn' as const }, owner, { gold: ownerPS.gold - cost, freeBuildNext: false });
     }
 
     case 'SKIP_BUILD': {
@@ -727,9 +936,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const owner = piece.owner;
       const ownerPS = getPS(state, owner);
       const troopData = TROOP_DATA[action.troopType];
-      const merchantDiscount = piece.characterType === 'merchant' ? 0.9 : 1;
       const priceScale = 1 + ownerPS.troopBuyCount * TROOP_PRICE_SCALE;
-      const unitCost = Math.ceil(troopData.price * merchantDiscount * priceScale);
+      const unitCost = Math.ceil(troopData.price * priceScale);
       if (action.tileId !== undefined) {
         // Deploy directly to tile garrison
         const canBuy = Math.min(action.amount, Math.floor(ownerPS.gold / unitCost));
@@ -763,12 +971,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const ownerPS = getPS(state, owner);
       const baseCost = nextHireCost(ownerPS.pieceCount);
       const activePiece = state.pieces.find(p => p.id === state.selectedPieceId && p.owner === owner);
-      const discount = activePiece?.characterType === 'merchant' ? 0.9 : 1;
-      const cost = Math.floor(baseCost * discount);
+      const cost = Math.floor(baseCost);
       if (ownerPS.gold < cost) return state;
       const newId = `${owner[0]}${ownerPS.pieceCount}`;
       const startIdx = owner === 'player' ? PLAYER_START : owner === 'ai' ? AI_START : owner === 'ai2' ? AI2_START : AI3_START;
-      const newPiece = { ...createPiece(newId, owner, action.characterType, startIdx), troops: 3, composition: { swordsman: 3 } };
+      const spawnPos = activePiece ? activePiece.position : startIdx;
+      const newPiece = { ...createPiece(newId, owner, action.characterType, startIdx), position: spawnPos, troops: 3, composition: { swordsman: 3 } };
       return setPS(
         { ...state, pieces: [...state.pieces, newPiece] },
         owner, { gold: ownerPS.gold - cost, pieceCount: ownerPS.pieceCount + 1 }
@@ -787,47 +995,52 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'APPLY_EVENT_CARD': {
+      // Effect already applied when card was drawn; just clear and end turn
+      // (move_to_tile / move_to_shop are the only exceptions — handled in case 'chance')
       if (!state.activeEvent) return state;
-      const newState = applyEventCardEffect(state, state.activeEvent);
-      if (newState.turnPhase === 'shop' || newState.turnPhase === 'choose_move_tile') {
-        return { ...newState, activeEvent: null };
-      }
-      return { ...newState, activeEvent: null, turnPhase: 'end_turn' };
-    }
-
-    case 'USE_EVENT_CARD': {
-      const card = state.player.cardSlot.find(c => c.id === action.cardId);
-      if (!card) return state;
-      const newSlot = state.player.cardSlot.filter(c => c.id !== action.cardId);
-      let withSlotUpdated = setPS(state, 'player', { cardSlot: newSlot });
-
-      // Special handling during defend_chance: apply defense effect then start battle
-      if (state.turnPhase === 'defend_chance' && state.pendingBattleTileId !== null) {
-        const e = card.effect;
-        if (e.kind === 'defense_reinforce') {
-          const tileId = state.pendingBattleTileId;
-          withSlotUpdated = {
-            ...withSlotUpdated,
-            tiles: withSlotUpdated.tiles.map(t => t.id === tileId
-              ? { ...t, troops: t.troops + e.amount, garrison: addToComp(t.garrison, 'swordsman', e.amount) }
-              : t),
-            log: [...withSlotUpdated.log, `수비 지원군 ${e.amount}명 증원!`],
-          };
-        } else if (e.kind === 'defense_boost') {
-          withSlotUpdated = setPS(withSlotUpdated, 'player', { defenseBoostMultiplier: e.multiplier });
-          withSlotUpdated = { ...withSlotUpdated, log: [...withSlotUpdated.log, `수비력 ${e.multiplier}배 강화!`] };
-        }
-        return executeBattle(withSlotUpdated, state.pendingBattleTileId);
-      }
-
-      return applyEventCardEffect(withSlotUpdated, card);
+      const e = state.activeEvent.effect;
+      if (e.kind === 'move_to_tile') return { ...state, activeEvent: null, turnPhase: 'choose_move_tile' };
+      if (e.kind === 'move_to_shop') return { ...state, activeEvent: null, turnPhase: 'shop' };
+      return { ...state, activeEvent: null, turnPhase: 'end_turn' };
     }
 
     case 'END_TURN': {
-      if (state.bonusRoll) {
-        // Stay on same player, grant extra roll
+      // Dragon autonomous movement (once per turn)
+      let endState = state;
+      if (endState.dragon && endState.dragon.troops > 0) {
+        const dragonRoll = Math.floor(Math.random() * 3) + 1; // 1-3 steps
+        const newDragonPos = nextPosition(endState.dragon.position, dragonRoll);
+        let dragon: DragonState = { ...endState.dragon, position: newDragonPos };
+        const dragonTile = endState.tiles.find(t => t.id === newDragonPos)!;
+        let newTiles = endState.tiles;
+        let dragonLog = `🐉 드래곤이 ${newDragonPos}번 칸으로 이동`;
+
+        if (dragonTile.troops > 0) {
+          // Dragon vs garrison — one round of combat
+          const garrisonDef = getGarrisonDefense(dragonTile.garrison, dragonTile.troops, getBuildingDefenseBonus(dragonTile));
+          const garrisonAtk = getGarrisonAttack(dragonTile.garrison, dragonTile.troops, getBuildingAttackBonus(dragonTile));
+          const dragonDmg = Math.max(1, Math.ceil(dragon.troops * DRAGON_ATK * 0.35 / garrisonDef));
+          const garrisonDmg = Math.max(1, Math.ceil(dragonTile.troops * garrisonAtk * 0.35 / DRAGON_DEF));
+          const newDragonTroops = Math.max(0, dragon.troops - garrisonDmg);
+          const newGarrisonTroops = Math.max(0, dragonTile.troops - dragonDmg);
+          dragon = { ...dragon, troops: newDragonTroops };
+          newTiles = newTiles.map(t => t.id === newDragonPos
+            ? { ...t, troops: newGarrisonTroops, garrison: newGarrisonTroops === 0 ? {} : scaleComp(t.garrison, newGarrisonTroops) }
+            : t);
+          dragonLog += ` — 수비대 침공! 드래곤 -${garrisonDmg}명, 수비대 -${dragonDmg}명`;
+        }
+
+        endState = { ...endState, tiles: newTiles, log: [...endState.log, dragonLog] };
+        if (dragon.troops <= 0) {
+          endState = { ...endState, dragon: null, log: [...endState.log, `🐉 드래곤이 쓰러졌다!`] };
+        } else {
+          endState = { ...endState, dragon };
+        }
+      }
+
+      if (endState.bonusRoll) {
         return {
-          ...state,
+          ...endState,
           turnPhase: 'roll',
           diceResult: null,
           dice1: null,
@@ -835,16 +1048,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           bonusRoll: false,
           selectedPieceId: null,
           activeTileAction: null,
-          log: [...state.log, `${getPS(state, state.currentTurn).name} 보너스 턴 획득!`],
+          lapBonusAnim: null,
+          passCollectQueue: null,
+          pendingStopTiles: null,
+          tollPayAnim: null,
+          log: [...endState.log, `${getPS(endState, endState.currentTurn).name} 보너스 턴 획득!`],
         };
       }
       const activePlayers: PlayerType[] = ['player', 'ai'];
-      if (state.playerCount >= 3) activePlayers.push('ai2');
-      if (state.playerCount >= 4) activePlayers.push('ai3');
-      const idx = activePlayers.indexOf(state.currentTurn);
+      if (endState.playerCount >= 3) activePlayers.push('ai2');
+      if (endState.playerCount >= 4) activePlayers.push('ai3');
+      const idx = activePlayers.indexOf(endState.currentTurn);
       const next = activePlayers[(idx + 1) % activePlayers.length];
       return {
-        ...state,
+        ...endState,
         currentTurn: next,
         turnPhase: 'roll',
         diceResult: null,
@@ -853,6 +1070,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         bonusRoll: false,
         selectedPieceId: null,
         activeTileAction: null,
+        lapBonusAnim: null,
+        passCollectQueue: null,
+        pendingStopTiles: null,
+        tollPayAnim: null,
       };
     }
 
@@ -865,8 +1086,13 @@ function handleTileLanding(state: GameState, tileId: number, _pieceId: string): 
   const tile = state.tiles.find(t => t.id === tileId)!;
   const owner = state.currentTurn;
 
+  // Dragon encounter — takes priority over normal tile logic
+  if (state.dragon && state.dragon.position === tileId && state.dragon.troops > 0) {
+    return executeDragonBattle(state);
+  }
+
   if (tile.type === 'start_p' || tile.type === 'start_e') {
-    if (tile.owner === owner) return { ...state, activeTileAction: tileId, turnPhase: 'shop' };
+    if (tile.owner === owner) return { ...state, activeTileAction: tileId, turnPhase: 'build' };
     if (tile.troops > 0 || (tile.owner && tile.owner !== 'neutral')) {
       return { ...state, activeTileAction: tileId, turnPhase: 'tile_event' };
     }
@@ -889,17 +1115,18 @@ function handleTileLanding(state: GameState, tileId: number, _pieceId: string): 
 
     case 'chance': {
       const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
-      if (owner === 'player') {
-        const slotCard = { ...card, id: makeSlotId(card.id) };
-        const playerPS = getPS(state, 'player');
-        if (playerPS.cardSlot.length < 3) {
-          return setPS(
-            { ...state, turnPhase: 'end_turn', log: [...state.log, `찬스 카드 획득: ${card.text}`] },
-            'player', { cardSlot: [...playerPS.cardSlot, slotCard] }
-          );
-        }
+      const e = card.effect;
+      // move_to_tile / move_to_shop: apply on confirm so the player can see the card first
+      if (e.kind === 'move_to_tile' || e.kind === 'move_to_shop') {
+        return { ...state, activeEvent: card, turnPhase: 'event_card',
+          log: [...state.log, `찬스 카드: ${card.text}`] };
       }
-      return { ...state, activeEvent: card, turnPhase: 'event_card' };
+      // All other cards: apply immediately, show result in EventModal
+      const applied = applyEventCardEffect(
+        { ...state, log: [...state.log, `찬스 카드: ${card.text}`] }, card
+      );
+      if (owner !== 'player') return { ...applied, turnPhase: 'end_turn' };
+      return { ...applied, activeEvent: card, turnPhase: 'event_card' };
     }
 
     default:
@@ -989,9 +1216,45 @@ function applyEventCardEffect(state: GameState, card: EventCard): GameState {
     case 'dice_bonus':
       newState = setPS(newState, owner, { diceBonusTurns: 1, diceBonusAmount: effect.amount });
       break;
-    // defense cards applied outside this function (in USE_EVENT_CARD during defend_chance)
-    case 'defense_reinforce':
+    case 'defense_reinforce': {
+      // Add troops directly to the owner's first piece
+      const activePiece = newState.pieces.find(p => p.owner === owner);
+      if (activePiece) {
+        const maxTroops = CHARACTERS[activePiece.characterType].maxTroops;
+        newState = { ...newState, pieces: newState.pieces.map(p => p.id === activePiece.id
+          ? { ...p, troops: Math.min(maxTroops, p.troops + effect.amount) } : p) };
+        newState = { ...newState, log: [...newState.log, `지원군 ${effect.amount}명 합류!`] };
+      }
+      break;
+    }
     case 'defense_boost':
+      newState = setPS(newState, owner, { defenseBoostMultiplier: effect.multiplier });
+      newState = { ...newState, log: [...newState.log, `수비력 ${effect.multiplier}배 강화 (다음 전투 적용)!`] };
+      break;
+    case 'garrison_reinforce': {
+      const ownedTiles = newState.tiles.filter(t => t.owner === owner && (t.type === 'land' || t.type === 'start_p' || t.type === 'start_e'));
+      if (ownedTiles.length > 0) {
+        let updatedTiles = [...newState.tiles];
+        for (let i = 0; i < effect.amount; i++) {
+          const tgt = ownedTiles[Math.floor(Math.random() * ownedTiles.length)];
+          const t = randomTroopType();
+          updatedTiles = updatedTiles.map(tile => tile.id === tgt.id
+            ? { ...tile, troops: tile.troops + 1, garrison: addToComp(tile.garrison, t, 1) } : tile);
+        }
+        newState = { ...newState, tiles: updatedTiles, log: [...newState.log, `증원군 ${effect.amount}명이 영토에 배치됨!`] };
+      }
+      break;
+    }
+    case 'free_build':
+      newState = setPS(newState, owner, { freeBuildNext: true });
+      newState = { ...newState, log: [...newState.log, `다음 건물 1채 무료 건설 가능!`] };
+      break;
+    case 'dragon_summon':
+      if (!newState.dragon && !newState.dragonPending) {
+        newState = { ...newState,
+          dragonPending: { summonAtLap: newState.lapCount + 5 },
+          log: [...newState.log, `🐉 드래곤의 각성! ${newState.lapCount + 5}바퀴 후 드래곤이 출현한다...`] };
+      }
       break;
   }
   return newState;
@@ -1010,7 +1273,7 @@ function eliminatePlayer(state: GameState, id: PlayerType): GameState {
 }
 
 function checkBankruptcy(state: GameState): GameState {
-  if (state.player.gold <= 0) {
+  if (state.player.gold < 0) {
     return { ...state, phase: 'gameover', winner: 'ai' };
   }
   // Eliminate individual AIs when they go broke

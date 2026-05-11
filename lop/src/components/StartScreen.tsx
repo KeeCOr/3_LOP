@@ -2,19 +2,13 @@
 import { useState } from 'react';
 import type { CharacterType, Difficulty } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
+import { CHAR_IMAGE } from '@/lib/charImages';
 
 const VERSION = '0.2.0';
 
 interface Props { onStart: (char: CharacterType, diff: Difficulty, playerCount: 2 | 3 | 4) => void; }
 
 const CHARACTER_TYPES = Object.keys(CHARACTERS) as CharacterType[];
-
-const CHAR_EMOJI: Record<CharacterType, string> = {
-  general:  '⚔️',
-  knight:   '🐴',
-  merchant: '💰',
-  scout:    '🦅',
-};
 
 // Delays for each spin step (ms). 11 steps so we naturally land on finalIdx.
 const SPIN_DELAYS = [65, 70, 85, 105, 135, 175, 215, 265, 320, 390, 440];
@@ -81,8 +75,8 @@ export default function StartScreen({ onStart }: Props) {
                         : 'border-gray-700 bg-gray-900 opacity-45'
                   }`}
                 style={{ width: '9rem' }}>
-                <div className={`text-4xl mb-1 transition-all duration-150 ${isActive || isFinal ? '' : 'grayscale'}`}>
-                  {CHAR_EMOJI[c]}
+                <div className={`w-20 h-24 mx-auto mb-1 transition-all duration-150 ${isActive || isFinal ? '' : 'grayscale opacity-60'}`}>
+                  <img src={CHAR_IMAGE[c]} alt={cd.name} className="w-full h-full object-contain" />
                 </div>
                 <div className={`font-bold text-sm ${isFinal ? 'text-yellow-300' : isActive ? 'text-blue-300' : 'text-gray-500'}`}>
                   {cd.name}
@@ -97,8 +91,10 @@ export default function StartScreen({ onStart }: Props) {
 
         {revealed && finalChar && (
           <div className="bg-gray-800 border border-yellow-500/40 rounded-xl px-7 py-4 text-center">
-            <div className="text-xl font-bold text-yellow-400 mb-1">
-              {CHAR_EMOJI[finalChar]} {CHARACTERS[finalChar].name}
+            <div className="flex items-center justify-center gap-3 mb-1">
+              <img src={CHAR_IMAGE[finalChar]} alt={CHARACTERS[finalChar].name}
+                className="w-14 h-16 object-contain flex-none" />
+              <div className="text-xl font-bold text-yellow-400">{CHARACTERS[finalChar].name}</div>
             </div>
             <div className="text-sm text-purple-300">
               ✦ {CHARACTERS[finalChar].skill.name}: {CHARACTERS[finalChar].skill.desc}

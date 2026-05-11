@@ -1,29 +1,13 @@
 {
   "name": "lop",
-  "version": "0.3.4",
+  "version": "0.3.8",
   "main": "electron/main.js",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "electron": "electron .",
-    "electron:build": "npm run build && electron-builder --config.win.signAndEditExecutable=false"
-  },
-  "build": {
-    "appId": "com.stoic.lop",
-    "productName": "Lord of Poly",
-    "directories": {
-      "output": "../releases"
-    },
-    "files": [
-      "out/**/*",
-      "electron/**/*"
-    ],
-    "win": {
-      "target": "portable"
-    }
+    "lint": "eslint"
   },
   "dependencies": {
     "next": "16.2.4",

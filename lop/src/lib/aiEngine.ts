@@ -128,7 +128,7 @@ export function getAiAction(state: GameState): GameAction {
         if (aiPieces.length < maxPieces) {
           const hireCost = nextHireCost(ai.pieceCount);
           if (ai.gold >= hireCost * 1.5) {
-            const charTypes: CharacterType[] = ['general', 'knight', 'merchant'];
+            const charTypes: CharacterType[] = ['general', 'pirate', 'warlock', 'agitator'];
             const charType = charTypes[Math.floor(Math.random() * charTypes.length)];
             return { type: 'BUY_PIECE', characterType: charType };
           }
@@ -147,9 +147,9 @@ export function getAiAction(state: GameState): GameAction {
       return { type: 'APPLY_EVENT_CARD' };
 
     case 'mercenary': {
-      // If mercenary already hired, take them to piece
+      // If mercenary already hired (auto-joined piece), close modal
       if (state.mercenaryResult !== null) {
-        return { type: 'TAKE_MERCENARY_TO_PIECE' };
+        return { type: 'CLOSE_MERCENARY' };
       }
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)
         ?? state.pieces.find(p => p.owner === state.currentTurn);

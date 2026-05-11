@@ -1,6 +1,20 @@
-import type { GameState, PlayerType } from '@/lib/gameTypes';
+import type { GameState, PlayerType, PlayerState } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
 import { FACTION_COLORS } from '@/lib/factionColors';
+import { CHAR_IMAGE } from '@/lib/charImages';
+
+function getActiveEffects(ps: PlayerState): { label: string; color: string }[] {
+  const fx: { label: string; color: string }[] = [];
+  if (ps.attackBoostActive)       fx.push({ label: '⚔️ 공격↑',          color: 'bg-red-800 text-red-200' });
+  if (ps.freeBuildNext)           fx.push({ label: '🎁 무료건설',         color: 'bg-yellow-800 text-yellow-200' });
+  if (ps.taxExemptTurns > 0)      fx.push({ label: `🧾 세금면제×${ps.taxExemptTurns}`,  color: 'bg-green-800 text-green-200' });
+  if (ps.tollExemptTurns > 0)     fx.push({ label: `🚫 통행료면제×${ps.tollExemptTurns}`, color: 'bg-blue-800 text-blue-200' });
+  if (ps.tollDoubleLaps > 0)      fx.push({ label: `💰 통행료2배×${ps.tollDoubleLaps}`,  color: 'bg-orange-800 text-orange-200' });
+  if (ps.buildDiscountLaps > 0)   fx.push({ label: `🔨 건설할인×${ps.buildDiscountLaps}`, color: 'bg-purple-800 text-purple-200' });
+  if (ps.diceBonusTurns > 0)      fx.push({ label: `🎲 주사위+${ps.diceBonusAmount}×${ps.diceBonusTurns}`, color: 'bg-cyan-800 text-cyan-200' });
+  if (ps.defenseBoostMultiplier > 1) fx.push({ label: '🛡️ 방어↑',        color: 'bg-indigo-800 text-indigo-200' });
+  return fx;
+}
 
 export default function HUD({ state }: { state: GameState }) {
   const activePlayers: PlayerType[] = ['player', 'ai'];
@@ -25,7 +39,7 @@ export default function HUD({ state }: { state: GameState }) {
 
         return (
           <div key={id}
-            className={`flex-1 px-2 py-1.5 border-r border-gray-800 last:border-r-0 transition-all duration-300
+            className={`flex-1 px-2 py-1 border-r border-gray-800 last:border-r-0 transition-all duration-300
               ${isCurrent
                 ? `${fc.bg} border-t-4 ${fc.border} brightness-125`
                 : 'border-t-4 border-transparent opacity-50'}`}>
@@ -50,11 +64,23 @@ export default function HUD({ state }: { state: GameState }) {
               </span>
               <span className={isCurrent ? 'text-gray-300' : 'text-gray-600'}>🏠{lands}</span>
               {pieces.map(p => (
-                <span key={p.id} className={isCurrent ? fc.textBright : 'text-gray-600'}>
-                  {CHARACTERS[p.characterType].name[0]}⚔️{p.troops}
+                <span key={p.id} className={`flex items-center gap-0.5 ${isCurrent ? fc.textBright : 'text-gray-600'}`}>
+                  <img src={CHAR_IMAGE[p.characterType]} alt={p.characterType}
+                    className="w-5 h-6 object-contain flex-none" />
+                  ⚔️{p.troops}
                 </span>
               ))}
             </div>
+            {/* Active effect badges */}
+            {getActiveEffects(ps).length > 0 && (
+              <div className="flex flex-wrap gap-[3px] mt-0.5">
+                {getActiveEffects(ps).map(fx => (
+                  <span key={fx.label} className={`text-[9px] font-bold px-1 py-[1px] rounded ${fx.color}`}>
+                    {fx.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}

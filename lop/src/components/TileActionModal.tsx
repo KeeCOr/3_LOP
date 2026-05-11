@@ -47,7 +47,7 @@ export default function TileActionModal({ state, dispatch }: Props) {
                   .filter(([, lv]) => lv > 0)
                   .map(([type, lv]) => (
                     <span key={type} className="text-purple-300 font-bold text-xs">
-                      {type === 'vault' ? '🏦' : type === 'barracks' ? '🏕️' : '🏰'}Lv{lv}
+                      {type === 'vault' ? '🏦' : type === 'barracks' ? '🏕️' : type === 'toll_gate' ? '🛂' : '🏰'}Lv{lv}
                     </span>
                   ))}
               </div>

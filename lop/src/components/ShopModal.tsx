@@ -3,11 +3,11 @@ import { useState } from 'react';
 import type { GameState, TroopType } from '@/lib/gameTypes';
 import type { CharacterType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
-import { CHARACTERS, TROOP_DATA, nextHireCost, TROOP_PRICE_SCALE } from '@/lib/gameData';
+import { CHARACTERS, TROOP_DATA, BUYABLE_TROOPS, nextHireCost, TROOP_PRICE_SCALE } from '@/lib/gameData';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
-const TROOP_TYPES = Object.keys(TROOP_DATA) as TroopType[];
+const TROOP_TYPES = BUYABLE_TROOPS;
 
 export default function ShopModal({ state, dispatch }: Props) {
   const [selectedTroop, setSelectedTroop] = useState<TroopType | null>(null);
@@ -17,13 +17,11 @@ export default function ShopModal({ state, dispatch }: Props) {
   const activePiece = state.pieces.find(p => p.id === state.selectedPieceId) ?? state.pieces.find(p => p.owner === 'player')!;
   const charData = CHARACTERS[activePiece.characterType];
   const maxTroops = charData.maxTroops;
-  const ismerchant = activePiece.characterType === 'merchant';
-  const discount = ismerchant ? 0.9 : 1;
-  const hireCost = Math.floor(nextHireCost(state.player.pieceCount) * discount);
+  const hireCost = Math.floor(nextHireCost(state.player.pieceCount));
   const chars = Object.keys(CHARACTERS) as CharacterType[];
   const priceScale = 1 + state.player.troopBuyCount * TROOP_PRICE_SCALE;
 
-  function unitCost(t: TroopType) { return Math.ceil(TROOP_DATA[t].price * discount * priceScale); }
+  function unitCost(t: TroopType) { return Math.ceil(TROOP_DATA[t].price * priceScale); }
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -115,7 +113,7 @@ export default function ShopModal({ state, dispatch }: Props) {
           <div className="px-4 pb-4 border-t border-gray-700 pt-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">말 고용</div>
-              <div className="text-xs text-yellow-400">{hireCost}골드{ismerchant && ' (10% 할인)'}</div>
+              <div className="text-xs text-yellow-400">{hireCost}골드</div>
             </div>
             <div className="grid grid-cols-4 gap-1.5">
               {chars.map(c => {

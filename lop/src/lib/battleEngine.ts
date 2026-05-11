@@ -1,11 +1,15 @@
 import type { BattleState, BattleRound, TroopComp, TroopType } from './gameTypes';
-import { TROOP_DATA } from './gameData';
+import { TROOP_DATA, CHARACTERS } from './gameData';
 
 const COUNTER_BONUS = 0.6;
 
-export function compAttackMod(comp: TroopComp, total: number): number {
+export function compAttackMod(comp: TroopComp, total: number, vsPiece = false): number {
   if (total === 0) return 1;
-  const sum = Object.entries(comp).reduce((s, [t, n]) => s + (TROOP_DATA[t as TroopType].attack * (n ?? 0)), 0);
+  const sum = Object.entries(comp).reduce((s, [t, n]) => {
+    const td = TROOP_DATA[t as TroopType];
+    const atk = (vsPiece && td.pieceBattleAttack !== undefined) ? td.pieceBattleAttack : td.attack;
+    return s + atk * (n ?? 0);
+  }, 0);
   return sum / total;
 }
 
@@ -80,24 +84,19 @@ export function runFullBattle(initial: BattleState): BattleState {
 
 export function getBattleAttack(
   piece: { characterType: string; troops: number; composition: TroopComp },
-  buildingAttackBonus = 1
+  buildingAttackBonus = 1,
+  vsPiece = false
 ): number {
-  const charData = { general: 1.3, knight: 1.1, merchant: 0.9, scout: 1.0 } as Record<string, number>;
-  const base = charData[piece.characterType] ?? 1.0;
-  const compMod = compAttackMod(piece.composition, piece.troops);
-  const skillMod = piece.characterType === 'general' ? 1.2
-    : piece.characterType === 'knight'
-      ? 1 + 0.2 * ((piece.composition.cavalry ?? 0) / Math.max(1, piece.troops))
-      : 1.0;
-  return base * compMod * buildingAttackBonus * skillMod;
+  const base = (CHARACTERS as Record<string, { attack: number }>)[piece.characterType]?.attack ?? 1.0;
+  const compMod = compAttackMod(piece.composition, piece.troops, vsPiece);
+  return base * compMod * buildingAttackBonus;
 }
 
 export function getBattleDefense(
   piece: { characterType: string; troops: number; composition: TroopComp },
   buildingDefenseBonus = 1
 ): number {
-  const charData = { general: 0.8, knight: 1.2, merchant: 0.9, scout: 1.0 } as Record<string, number>;
-  const base = charData[piece.characterType] ?? 1.0;
+  const base = (CHARACTERS as Record<string, { defense: number }>)[piece.characterType]?.defense ?? 1.0;
   const compMod = compDefenseMod(piece.composition, piece.troops);
   return base * compMod * buildingDefenseBonus;
 }

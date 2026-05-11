@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOP — Land of Power 설계 문서</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3352;
+    --accent: #f5c842;
+    --accent2: #6c8ef5;
+    --green: #4ade80;
+    --red: #f87171;
+    --orange: #fb923c;
+    --text: #e2e8f0;
+    --muted: #8892b0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .wrapper { display: flex; min-height: 100vh; }
+  nav {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 230px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 0 40px;
+    z-index: 100;
+  }
+  nav .logo {
+    font-size: 18px; font-weight: 900; color: var(--accent);
+    padding: 0 20px 20px; border-bottom: 1px solid var(--border);
+    letter-spacing: -0.5px;
+  }
+  nav .logo span { color: var(--muted); font-size: 11px; font-weight: 400; display: block; margin-top: 2px; }
+  nav ul { list-style: none; padding: 12px 0; }
+  nav ul li a {
+    display: block; padding: 7px 20px;
+    color: var(--muted); text-decoration: none; font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  nav ul li a:hover, nav ul li a.active {
+    color: var(--accent); border-left-color: var(--accent);
+    background: rgba(245,200,66,0.05);
+  }
+  nav ul li.section-header {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    padding: 14px 20px 4px; text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  main { margin-left: 230px; max-width: 900px; padding: 48px 48px 80px; }
+
+  .doc-header { border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 48px; }
+  .doc-header .badge {
+    display: inline-block; background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px;
+    margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .doc-header h1 { font-size: 36px; font-weight: 900; color: var(--accent); letter-spacing: -1px; line-height: 1.2; }
+  .doc-header .subtitle { color: var(--muted); margin-top: 8px; font-size: 14px; }
+
+  section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  h2 {
+    font-size: 22px; font-weight: 800; color: var(--accent);
+    border-left: 4px solid var(--accent); padding-left: 14px;
+    margin-bottom: 20px; letter-spacing: -0.5px;
+  }
+  h3 { font-size: 16px; font-weight: 700; color: var(--accent2); margin: 28px 0 12px; }
+  p { color: var(--text); margin-bottom: 12px; }
+
+  .table-wrap { overflow-x: auto; margin-bottom: 20px; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead tr { background: var(--surface2); }
+  th {
+    text-align: left; padding: 10px 14px; color: var(--accent);
+    font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--accent2); }
+
+  .callout {
+    background: var(--surface2); border-left: 3px solid var(--accent2);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px; margin: 16px 0; font-size: 13.5px; color: var(--muted);
+  }
+  .callout.warning { border-left-color: var(--orange); }
+  .callout.success { border-left-color: var(--green); }
+  .callout strong { color: var(--text); }
+
+  pre {
+    background: #0a0c14; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; font-family: 'Consolas', 'D2Coding', monospace;
+    font-size: 13px; color: #a8dadc; overflow-x: auto; margin: 16px 0; line-height: 1.6;
+  }
+  code {
+    background: rgba(108,142,245,0.15); color: var(--accent2);
+    font-family: 'Consolas', monospace; font-size: 12px; padding: 1px 6px; border-radius: 4px;
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+  .card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .card .card-title { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .card-val { font-size: 22px; font-weight: 900; color: var(--text); }
+  .card .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .timeline { margin: 20px 0; }
+  .phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; }
+  .phase-header { background: var(--surface2); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .phase-badge { background: var(--accent); color: #000; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
+  .phase-title { font-weight: 700; font-size: 15px; }
+  .phase-body { padding: 0; }
+  .phase-body .table-wrap { margin: 0; border: none; border-radius: 0; }
+
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--muted); }
+  .pill strong { color: var(--text); }
+
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 4px; margin-left: 4px; }
+  .tag.free { background: rgba(74,222,128,0.15); color: var(--green); }
+  .tag.premium { background: rgba(245,200,66,0.15); color: var(--accent); }
+  .tag.new { background: rgba(108,142,245,0.2); color: var(--accent2); }
+
+  ul.list { padding-left: 20px; margin: 10px 0; }
+  ul.list li { margin-bottom: 6px; color: var(--text); font-size: 14px; }
+  ul.list li::marker { color: var(--accent); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  .tile-demo { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+  .tile { width: 80px; border-radius: 8px; overflow: hidden; border: 2px solid; font-size: 10px; text-align: center; }
+  .tile.owned { border-color: #3b82f6; }
+  .tile.owned-ai { border-color: #ef4444; }
+  .tile.neutral { border-color: #4b5563; }
+  .tile .t-top { padding: 3px 4px; font-weight: 900; font-size: 9px; }
+  .tile.owned .t-top { background: #2563eb; color: #fff; }
+  .tile.owned-ai .t-top { background: #dc2626; color: #fff; }
+  .tile.neutral .t-top { background: #374151; color: #9ca3af; }
+  .tile .t-mid { padding: 6px 4px; background: #111827; color: #e5e7eb; line-height: 1.4; }
+  .tile .t-bot { padding: 3px 4px; background: rgba(0,0,0,0.5); font-weight: 900; font-size: 10px; }
+  .tile.owned .t-bot, .tile.owned-ai .t-bot { color: #fb923c; }
+  .tile.neutral .t-bot { color: #e5e7eb; }
+
+  @media (max-width: 768px) {
+    nav { display: none; }
+    main { margin-left: 0; padding: 24px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<nav>
+  <div class="logo">LOP<span>Land of Power — 설계 문서</span></div>
+  <ul>
+    <li class="section-header">개요</li>
+    <li><a href="#overview">1. 게임 개요</a></li>
+    <li><a href="#tech">2. 기술 스택</a></li>
+    <li><a href="#flow">3. 게임 플로우</a></li>
+    <li class="section-header">시스템</li>
+    <li><a href="#board">4. 보드 레이아웃</a></li>
+    <li><a href="#piece">5. 말(장수) 시스템</a></li>
+    <li><a href="#troops">6. 병력 시스템</a></li>
+    <li><a href="#territory">6-1. 영토 점령</a></li>
+    <li><a href="#building">7. 건물 시스템</a></li>
+    <li><a href="#battle">8. 전투 시스템</a></li>
+    <li><a href="#economy">9. 경제 시스템</a></li>
+    <li><a href="#ai">10. AI 시스템</a></li>
+    <li><a href="#ui">11. 화면 구성</a></li>
+    <li class="section-header">비즈니스</li>
+    <li><a href="#bm">12. BM 개요</a></li>
+    <li><a href="#roadmap">13. 출시 로드맵</a></li>
+  </ul>
+</nav>
+
+<main>
+  <div class="doc-header">
+    <div class="badge">Game Design Document</div>
+    <h1>LOP — Land of Power</h1>
+    <div class="subtitle">작성일: 2026-04-21 &nbsp;·&nbsp; 최종 업데이트: 2026-05-04 &nbsp;·&nbsp; v0.4.0</div>
+  </div>
+
+  <!-- 1 -->
+  <section id="overview">
+    <h2>1. 게임 개요</h2>
+    <div class="cards">
+      <div class="card"><div class="card-title">장르</div><div class="card-val" style="font-size:15px">전략 보드게임</div><div class="card-sub">모노폴리 메카닉 참조, IP 무관</div></div>
+      <div class="card"><div class="card-title">판 크기</div><div class="card-val">14칸</div><div class="card-sub">초소형 — 10~20분/판</div></div>
+      <div class="card"><div class="card-title">플레이어 수</div><div class="card-val">1~4인</div><div class="card-sub">vs AI (추후 멀티)</div></div>
+      <div class="card"><div class="card-title">승리 조건</div><div class="card-val" style="font-size:14px">상대 파산</div><div class="card-sub">골드 0 이하 → 탈락</div></div>
+    </div>
+    <div class="callout"><strong>IP 독립성:</strong> LOP는 모노폴리 메카닉에서 영감을 받았으나, Hasbro 등과 어떠한 자산·명칭·디자인도 공유하지 않는 완전 독립 IP다.</div>
+    <div class="callout"><strong>의도적 소형 보드:</strong> 표준 모노폴리(40칸, 1~4시간)와 달리 14칸으로 축소해 1판을 10~20분 내에 완료. 모바일 세션 플레이 최적화.</div>
+  </section>
+
+  <!-- 2 -->
+  <section id="tech">
+    <h2>2. 기술 스택</h2>
+    <div class="pills">
+      <div class="pill"><strong>Next.js 16</strong> + React 19</div>
+      <div class="pill"><strong>TypeScript</strong></div>
+      <div class="pill"><strong>Tailwind CSS v4</strong></div>
+      <div class="pill"><strong>Electron 41</strong> — portable exe</div>
+      <div class="pill">React <strong>useReducer</strong></div>
+    </div>
+    <div class="callout success"><strong>캐릭터 원화:</strong> <code>/public/player/</code> PNG 7종 — pirate, agitator, smuggler, swindler, warlock, cleric, general</div>
+  </section>
+
+  <!-- 3 -->
+  <section id="flow">
+    <h2>3. 게임 플로우</h2>
+<pre>게임 시작 → 캐릭터 선택 → 보드 시작
+  └→ [매 턴]
+       ├→ 주사위 굴림
+       ├→ 이동할 말 1개 선택
+       ├→ 선택한 말 이동
+       └→ 칸 이벤트 처리
+            ├→ 중립 땅: 전투 또는 골드 지불로 구매
+            ├→ 내 땅: 건물 건설/업그레이드 + 병력 배치·징집
+            ├→ 적 땅: 전투 또는 통행세 납부
+            ├→ 적 말 조우: 말 전투 시뮬레이션
+            ├→ 용병소: 골드로 용병 고용
+            ├→ 찬스: 랜덤 이벤트 카드 즉시 발동
+            └→ 출발점 통과: 골드·영토 생산 + 병사 고용 특전</pre>
+  </section>
+
+  <!-- 4 -->
+  <section id="board">
+    <h2>4. 보드 레이아웃</h2>
+    <p>5×4 외곽 14칸 구성. 플레이어(P)와 AI(E)는 대각선 반대편에서 시작.</p>
+<pre>[ P ] [땅1] [땅2] [용병] [땅3]
+[땅4]                   [찬스]
+[찬스]                  [땅5]
+[땅6] [찬스] [땅7] [땅8] [ E ]</pre>
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>칸 종류</th><th>수</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>출발 (P/E)</td><td>2</td><td>각자 시작점. 통과 시 골드·영토 생산 + 병사 고용 특전</td></tr>
+          <tr><td>일반 땅</td><td>8</td><td>게임 시작 시 중립 병력 배치. 전투 또는 구매로 점령</td></tr>
+          <tr><td>용병소</td><td>2</td><td>400골드로 랜덤 병종 2~8명 고용</td></tr>
+          <tr><td>찬스</td><td>2</td><td>착지 즉시 랜덤 이벤트 카드 발동</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>찬스 카드 (21종) — 착지 즉시 발동</h3>
+    <div class="callout">모든 카드 착지 즉시 발동. 카드 슬롯 없음. 이동/상점 카드만 확인 버튼, 나머지 <strong>2초 자동 닫힘</strong>.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>분류</th><th>카드</th><th>효과</th></tr></thead>
+        <tbody>
+          <tr><td>즉시 골드</td><td>골드 +200 / +400 / +600</td><td>즉시 지급</td></tr>
+          <tr><td>즉시 병력</td><td>병력 +3 / +5 / +8명</td><td>말에 즉시 합류</td></tr>
+          <tr><td>징집</td><td>긴급 징집 (300골드/10명), 무료 징병 6명</td><td>즉시 처리</td></tr>
+          <tr><td>주사위</td><td>다음 주사위 +2 / +4</td><td>다음 롤에 적용</td></tr>
+          <tr><td>전투 강화</td><td>공격력 1.5배 / 2배, 수비력 1.5배 / 2배</td><td>다음 전투에 적용</td></tr>
+          <tr><td>경제 전략</td><td>통행세 면제, 적 통행세 2배(1~2바퀴), 건설 50% 할인</td><td>즉시 활성화</td></tr>
+          <tr><td>이동 / 특수</td><td>원하는 칸 이동, 상점 이동, 적 땅 초기화</td><td>즉시 실행</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="piece">
+    <h2>5. 말(장수) 시스템</h2>
+    <h3>5.1 능력치</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>능력치</th><th>역할</th></tr></thead>
+        <tbody>
+          <tr><td><code>공격력</code></td><td>전투 시 병력 데미지 배율</td></tr>
+          <tr><td><code>방어력</code></td><td>받는 데미지 감소</td></tr>
+          <tr><td><code>통솔력</code></td><td>최대 보유 병력 수</td></tr>
+          <tr><td><code>이동력</code></td><td>주사위 결과에 +보너스</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5.2 캐릭터 7종</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>캐릭터</th><th>공격</th><th>방어</th><th>통솔</th><th>이동</th><th>고유 스킬</th><th>잠금</th></tr></thead>
+        <tbody>
+          <tr><td><strong>장군</strong></td><td>1.3×</td><td>0.8×</td><td>20명</td><td>+0</td><td>진군: 이번 전투 공격력 2배 (쿨3턴)</td><td><span class="tag free">무료</span></td></tr>
+          <tr><td><strong>선동가</strong></td><td>1.0×</td><td>1.0×</td><td>14명</td><td>+1</td><td>선동: 랩 통과 시 병력 +2명</td><td><span class="tag free">무료</span></td></tr>
+          <tr><td><strong>밀수꾼</strong></td><td>1.0×</td><td>1.0×</td><td>15명</td><td>+0</td><td>밀수: 랩 통과 시 골드 +200</td><td><span class="tag premium">프리미엄</span></td></tr>
+          <tr><td><strong>사기꾼</strong></td><td>1.0×</td><td>1.0×</td><td>12명</td><td>+0</td><td>사기: 주사위 0 시 골드 +200</td><td><span class="tag premium">프리미엄</span></td></tr>
+          <tr><td><strong>흑마술사</strong></td><td>1.0×</td><td>1.0×</td><td>11명</td><td>+0</td><td>저주: 랩 통과 시 적 병력 2명 제거</td><td><span class="tag premium">프리미엄</span></td></tr>
+          <tr><td><strong>성직자</strong></td><td>0.9×</td><td>1.1×</td><td>14명</td><td>+0</td><td>봉헌: 랩 통과 시 내 영토에 3명 추가</td><td><span class="tag premium">프리미엄</span></td></tr>
+          <tr><td><strong>해적</strong></td><td>1.2×</td><td>0.9×</td><td>16명</td><td>+1</td><td>약탈: 전투 승리 시 적 골드 획득</td><td><span class="tag premium">프리미엄</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5.3 장비 슬롯</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>장비</th><th>효과</th><th>가격</th></tr></thead>
+        <tbody>
+          <tr><td>검</td><td>공격력 +0.2×</td><td>400g</td></tr>
+          <tr><td>갑옷</td><td>방어력 +0.2×</td><td>400g</td></tr>
+          <tr><td>군기</td><td>최대 병력 +8명</td><td>350g</td></tr>
+          <tr><td>군화</td><td>이동력 +1</td><td>300g</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5.4 말 고용 비용</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>순서</th><th>비용</th></tr></thead>
+        <tbody>
+          <tr><td>1번째</td><td>무료</td></tr>
+          <tr><td>2번째</td><td>500g</td></tr>
+          <tr><td>3번째</td><td>1,200g</td></tr>
+          <tr><td>4번째</td><td>2,500g</td></tr>
+          <tr><td>N번째</td><td>이전 × 2 + 300g</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="troops">
+    <h2>6. 병력 시스템</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>항목</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>시작 병력</td><td>말마다 <strong>25명</strong> (검사 10 + 궁수 8 + 창병 7)</td></tr>
+          <tr><td>한 바퀴 고용 <span class="tag new">특전</span></td><td>출발점 통과 시 골드로 병사 고용 가능 (LapBonusModal)</td></tr>
+          <tr><td>영토 자동 생산</td><td>한 바퀴 완주 시 내 영토마다 자동 증가 (기본 1명 + 병영 보너스)</td></tr>
+          <tr><td>전투 점령 자동 배치</td><td>전투 승리 시 기본 <strong>5명</strong>(검사) 즉시 배치 → 추가 배치 선택</td></tr>
+          <tr><td>최대 보유</td><td>말의 통솔력에 따라 결정</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="list">
+      <li>말이 데리고 다니는 병력만 전투에 참여</li>
+      <li>땅에 배치된 병력은 수비 전용</li>
+      <li>내 땅 착지 시 병력 <strong>배치</strong> 또는 영토에서 <strong>징집</strong> 가능</li>
+    </ul>
+  </section>
+
+  <!-- 6-1 -->
+  <section id="territory">
+    <h2>6-1. 중립 병력 &amp; 땅 점령</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>티어</th><th>중립 병력</th><th>구매가</th><th>기본 통행세</th></tr></thead>
+        <tbody>
+          <tr><td>Tier 1 (출발점 인근)</td><td>1~3명</td><td>200g</td><td>120g</td></tr>
+          <tr><td>Tier 2 (중간)</td><td>2~5명</td><td>400g</td><td>250g</td></tr>
+          <tr><td>Tier 3 (프리미엄)</td><td>4~8명</td><td>650g</td><td>420g</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>점령 방법</th><th>조건</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><td><strong>전투</strong></td><td>병력 보유</td><td>승리 시 점령. 기본 5명 자동 배치 후 추가 배치 선택</td></tr>
+          <tr><td><strong>골드 구매</strong></td><td>충분한 골드</td><td>즉시 점령. 중립 병력이 내 수비대로 전환</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warning">적 땅은 전투만 가능. 골드 구매는 중립 땅에서만 허용.</div>
+  </section>
+
+  <!-- 7 -->
+  <section id="building">
+    <h2>7. 건물 시스템</h2>
+    <p>내 땅 착지 시 건설/업그레이드 선택. 땅 1칸에 여러 종류 건설 가능, 같은 종류는 Lv3까지. 빼앗기면 건물째 귀속.</p>
+
+    <h3>🏦 금고 — 경제 건물</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>등급</th><th>비용</th><th>랩 수입</th><th>통행세 보너스</th></tr></thead>
+        <tbody>
+          <tr><td>Lv1 금고</td><td>200g</td><td>+100g</td><td>+100g</td></tr>
+          <tr><td>Lv2 은행</td><td>500g</td><td>+250g</td><td>+200g</td></tr>
+          <tr><td>Lv3 왕실 금고</td><td>1,000g</td><td>+500g</td><td>+350g</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>🏕️ 병영 — 병력 건물</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>등급</th><th>비용</th><th>랩 생산</th><th>통행세 보너스</th></tr></thead>
+        <tbody>
+          <tr><td>Lv1 병영</td><td>200g</td><td>+3명</td><td>+100g</td></tr>
+          <tr><td>Lv2 훈련소</td><td>500g</td><td>+7명</td><td>+200g</td></tr>
+          <tr><td>Lv3 대병영</td><td>1,000g</td><td>+15명</td><td>+350g</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>🏰 초소 — 수비 건물</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>등급</th><th>비용</th><th>수비 보너스</th><th>통행세</th></tr></thead>
+        <tbody>
+          <tr><td>Lv1 초소</td><td>200g</td><td>공격+15%, 방어+10%</td><td>200g</td></tr>
+          <tr><td>Lv2 성벽</td><td>500g</td><td>공격+35%, 방어+25%</td><td>450g</td></tr>
+          <tr><td>Lv3 요새</td><td>1,000g</td><td>공격+60%, 방어+50%</td><td>900g</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="battle">
+    <h2>8. 전투 시스템</h2>
+
+    <h3>전투 발생 조건</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>상황</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td><strong>영토 전투</strong></td><td>적 땅 또는 중립 땅 착지 → 수비 병력과 전투</td></tr>
+          <tr><td><strong>말 전투</strong></td><td>같은 칸에 적 말 → 말끼리 + 보유 병력으로 전투</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>전투 계산</h3>
+    <ul class="list">
+      <li>매 라운드: 공격측 병력 × 공격력 배율 → 방어력으로 감소 후 적 병력 차감</li>
+      <li>수비측 동시 반격. 병종 상성 카운터 보너스 적용</li>
+      <li>강화 건물이 있으면 수비 병력 공격/방어 추가 보너스</li>
+    </ul>
+    <div class="callout success"><strong>승리:</strong> 기본 5명 자동 배치 → 말에서 추가 배치 선택</div>
+    <div class="callout warning"><strong>패배:</strong> 말이 병력 0으로 출발점 귀환</div>
+
+    <h3>병종 상성</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>병종</th><th>강한 상대</th><th>약한 상대</th></tr></thead>
+        <tbody>
+          <tr><td>검사 (Swordsman)</td><td>창병</td><td>기병</td></tr>
+          <tr><td>궁수 (Archer)</td><td>기병</td><td>창병</td></tr>
+          <tr><td>기병 (Cavalry)</td><td>검사</td><td>궁수</td></tr>
+          <tr><td>창병 (Spearman)</td><td>궁수</td><td>검사</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section id="economy">
+    <h2>9. 경제 시스템</h2>
+    <div class="callout success">
+      <strong>시작 자금:</strong> 1,500골드 &nbsp;|&nbsp;
+      <strong>시작 병력:</strong> 25명 (검사 10 + 궁수 8 + 창병 7) &nbsp;|&nbsp;
+      <strong>파산 조건:</strong> 골드 0 이하
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>수입</th><th>지출</th></tr></thead>
+        <tbody>
+          <tr><td>통행세 수금</td><td>땅 구매</td></tr>
+          <tr><td>출발점 통과 보너스</td><td>건물 건설/업그레이드</td></tr>
+          <tr><td>금고 건물 (랩 수입)</td><td>병사 고용 (랩 특전)</td></tr>
+          <tr><td>찬스 카드</td><td>말 추가 고용</td></tr>
+          <tr><td>영토 자동 생산 (병력)</td><td>장비 구매 (상점)</td></tr>
+          <tr><td></td><td>세금 칸 납부 (보유 골드 10%)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="ai">
+    <h2>10. AI 시스템</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>난이도</th><th>행동 방식</th></tr></thead>
+        <tbody>
+          <tr><td>쉬움</td><td>말 랜덤 선택. 구매·건설 랜덤 확률</td></tr>
+          <tr><td>보통</td><td>상황별 우선순위 규칙 적용</td></tr>
+          <tr><td>어려움</td><td>보통 규칙 + 플레이어 자원 파악 후 최적 행동</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>AI 우선순위 규칙</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>상황</th><th>AI 행동</th></tr></thead>
+        <tbody>
+          <tr><td>빈 땅 착지</td><td>골드 여유 있으면 구매</td></tr>
+          <tr><td>자기 땅 착지</td><td>병력 부족 시 병영, 돈 부족 시 금고 우선</td></tr>
+          <tr><td>적 땅 착지</td><td>병력 우세 시 전투, 열세 시 통행세</td></tr>
+          <tr><td>영토 3개+ (어려움)</td><td>2번째 말 고용 고려</td></tr>
+          <tr><td>플레이어 약세 (어려움)</td><td>약한 영토 집중 공략</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section id="ui">
+    <h2>11. 화면 구성</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>화면</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td><code>start</code></td><td>캐릭터 선택 → 인원·난이도 설정 (원화 표시)</td></tr>
+          <tr><td><code>board</code></td><td>메인 보드. HUD + 5×4 격자 + 하단 로그</td></tr>
+          <tr><td><code>battle_modal</code></td><td>전투 시뮬레이션</td></tr>
+          <tr><td><code>build_modal</code></td><td>건물 건설 + 배치·징집</td></tr>
+          <tr><td><code>lap_bonus_modal</code></td><td>랩 보너스 + 병사 고용 특전</td></tr>
+          <tr><td><code>shop_modal</code></td><td>말·장비 구매</td></tr>
+          <tr><td><code>event_modal</code></td><td>찬스 카드 결과 (2초 자동 닫힘)</td></tr>
+          <tr><td><code>gameover</code></td><td>게임 종료</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>보드 타일 UI — 모노폴리 스타일</h3>
+    <div class="tile-demo">
+      <div class="tile owned">
+        <div class="t-top">플레이어</div>
+        <div class="t-mid">북방<br>요충지<br><span style="color:#60a5fa;font-size:9px">15명</span></div>
+        <div class="t-bot">통행세 450g</div>
+      </div>
+      <div class="tile neutral">
+        <div class="t-top">미점령</div>
+        <div class="t-mid">동부<br>평야<br><span style="color:#6b7280;font-size:9px">3명</span></div>
+        <div class="t-bot">구매가 400g</div>
+      </div>
+      <div class="tile owned-ai">
+        <div class="t-top">AI 1</div>
+        <div class="t-mid">서부<br>항구<br><span style="color:#f87171;font-size:9px">8명 🏰</span></div>
+        <div class="t-bot">통행세 900g</div>
+      </div>
+    </div>
+    <ul class="list">
+      <li><strong>상단 컬러 띠</strong>: 소유주 진영 색상 (미점령 = 회색)</li>
+      <li><strong>중앙</strong>: 타일 이름 + 주둔 병력 + 건물 아이콘</li>
+      <li><strong>하단 가격 띠</strong>: 소유 → 통행세, 미점령 → 구매가</li>
+      <li>지형 아이콘 제거 — 가격 정보 집중 표시</li>
+    </ul>
+
+    <h3>보드 말 표시</h3>
+    <ul class="list">
+      <li>타일 하단에 캐릭터 원화 세워서 표시 (<code>object-contain</code>)</li>
+      <li>타일 정보를 가리지 않도록 <code>overflow-hidden</code> 바깥 절대위치 배치 (z-index 처리)</li>
+      <li>병력 수: 진영 색상 배지로 발 아래 표시</li>
+    </ul>
+  </section>
+
+  <hr class="divider">
+
+  <!-- 12 -->
+  <section id="bm">
+    <h2>12. BM (Business Model)</h2>
+    <div class="callout"><strong>전략 레퍼런스:</strong> 모두의 마블 (Com2uS) — F2P 모바일 보드게임 수익화 모델 기반</div>
+
+    <h3>플랫폼별 배포</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>플랫폼</th><th>배포</th><th>수익 모델</th></tr></thead>
+        <tbody>
+          <tr><td>모바일 웹 (PWA)</td><td>무료 설치</td><td>F2P + 보석 IAP</td></tr>
+          <tr><td>PC (Electron)</td><td>무료 다운로드</td><td>F2P + 보석 IAP</td></tr>
+          <tr><td>앱스토어 (iOS/Android)</td><td>무료 설치</td><td>F2P + IAP + 시즌 패스</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>보석 가격표</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>보석</th><th>현금</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td>30</td><td>₩1,100</td><td>소액</td></tr>
+          <tr><td>80</td><td>₩2,900</td><td>+6 보너스</td></tr>
+          <tr><td>180</td><td>₩5,900</td><td>+30 보너스</td></tr>
+          <tr><td>400</td><td>₩11,900</td><td>+70 보너스</td></tr>
+          <tr><td>1,000</td><td>₩27,900</td><td>+200 보너스</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>콘텐츠 잠금</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>콘텐츠</th><th>무료</th><th>유료 해금</th></tr></thead>
+        <tbody>
+          <tr><td>캐릭터</td><td>2종 (장군, 선동가)</td><td>5종 — 보석 뽑기 또는 전체 해금 팩</td></tr>
+          <tr><td>AI 난이도</td><td>쉬움·보통</td><td>어려움 — 전체 해금 팩</td></tr>
+          <tr><td>플레이어 수</td><td>1 vs AI</td><td>3~4인 멀티 — 전체 해금 팩</td></tr>
+          <tr><td>보드 테마</td><td>기본 1종</td><td>보석 직접 구매·뽑기</td></tr>
+          <tr><td>캐릭터 스킨</td><td>—</td><td>80보석</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>BM 원칙</h3>
+    <ul class="list">
+      <li><strong>Pay-to-win 금지</strong> — 보석으로 골드·병력·전투력 직접 구매 불가</li>
+      <li><strong>광고 강제 노출 금지</strong> — 모든 광고 유저 선택형</li>
+      <li><strong>핵심 루프 무료 제공</strong> — 결제 없이 충분한 게임 경험</li>
+      <li><strong>확률 투명 공개</strong> — 뽑기 확률 인게임 전면 표시 (한국 게임법)</li>
+    </ul>
+  </section>
+
+  <!-- 13 -->
+  <section id="roadmap">
+    <h2>13. 출시 전략 &amp; 로드맵</h2>
+    <div class="timeline">
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-badge">Phase 1</span>
+          <span class="phase-title">웹게임 출시 — 현재</span>
+        </div>
+        <div class="phase-body">
+          <div class="table-wrap">
+            <table>
+              <tbody>
+                <tr><td style="width:110px;color:var(--muted)">플랫폼</td><td>브라우저 PWA + Electron 데스크탑</td></tr>
+                <tr><td style="color:var(--muted)">대전</td><td>1~4인 vs AI</td></tr>
+                <tr><td style="color:var(--muted)">수익화</td><td>보석 IAP, 웰컴 팩, 광고 보상</td></tr>
+                <tr><td style="color:var(--muted)">목표</td><td>DAU 1,000+, 월 매출 200만원+, 7일 리텐션 30%+</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-badge" style="background:var(--accent2);color:#fff">Phase 2</span>
+          <span class="phase-title">모바일 앱 출시</span>
+        </div>
+        <div class="phase-body">
+          <div class="table-wrap">
+            <table>
+              <tbody>
+                <tr><td style="width:110px;color:var(--muted)">트리거</td><td>Phase 1 매출 목표 달성 후</td></tr>
+                <tr><td style="color:var(--muted)">플랫폼</td><td>iOS / Android / 원스토어</td></tr>
+                <tr><td style="color:var(--muted)">신규</td><td>유저 간 실시간 MMR 매칭, 리그, 친구 대전, 클럽</td></tr>
+                <tr><td style="color:var(--muted)">목표</td><td>MAU 10,000+, 구매 전환율 8%+</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-badge" style="background:var(--green);color:#000">Phase 3</span>
+          <span class="phase-title">Steam — 글로벌 확장</span>
+        </div>
+        <div class="phase-body">
+          <div class="table-wrap">
+            <table>
+              <tbody>
+                <tr><td style="width:110px;color:var(--muted)">트리거</td><td>Phase 2 안정화 후</td></tr>
+                <tr><td style="color:var(--muted)">플랫폼</td><td>Steam PC — 크로스플레이</td></tr>
+                <tr><td style="color:var(--muted)">현지화</td><td>영어·일본어·중국어</td></tr>
+                <tr><td style="color:var(--muted)">마케팅</td><td>Steam Next Fest, 글로벌 IP 콜라보</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="callout success">각 Phase는 이전 Phase 매출로 다음 개발비를 자체 조달하는 <strong>부트스트랩 구조</strong>. 외부 투자 없이 단계적 확장 가능.</div>
+  </section>
+
+</main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector('nav a[href="#' + e.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -65% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
