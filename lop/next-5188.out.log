@@ -1,0 +1,9 @@
+
+> lop@0.3.8 dev
+> next dev --hostname 127.0.0.1 --port 5188
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://127.0.0.1:5188
+- Network:       http://127.0.0.1:5188
+✓ Ready in 624ms
+

@@ -1,0 +1,64 @@
+<h2>LOP Layout Direction</h2>
+<p class="subtitle">플레이 화면과 시작 화면을 함께 다듬는 3가지 방향입니다. 구조와 정보 우선순위만 비교해 주세요.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:220px;background:#08111f;border:1px solid #31415a;border-radius:10px;display:grid;grid-template-rows:34px 1fr 54px;gap:8px;padding:8px;color:#d9e8ff;font-size:11px">
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:#172338;border-radius:6px;padding:8px">상단 턴/자원 HUD</div>
+          <div style="width:160px;background:#172338;border-radius:6px;padding:8px">행동 버튼</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 230px;gap:8px;min-height:0">
+          <div style="background:#0b1628;border:1px solid #465a78;border-radius:8px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(4,1fr);gap:4px;padding:6px">
+            <span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span>
+            <span style="background:#203552;border-radius:4px"></span><span></span><span></span><span></span><span style="background:#203552;border-radius:4px"></span>
+            <span style="background:#203552;border-radius:4px"></span><span></span><span></span><span></span><span style="background:#203552;border-radius:4px"></span>
+            <span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span><span style="background:#203552;border-radius:4px"></span>
+          </div>
+          <div style="background:#111c2d;border-radius:8px;padding:10px">선택 타일 상세<br><br>소유 / 통행료 / 병력 / 건물</div>
+        </div>
+        <div style="background:#172338;border-radius:6px;padding:8px">하단 로그 / 다음 목표 / 보너스</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 전술 보드형</h3>
+      <p>보드를 크게 두고 우측 상세 패널로 클릭 정보를 고정합니다. 게임판이 주인공인 가장 안전한 개편입니다.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:220px;background:#10130f;border:1px solid #4b533d;border-radius:10px;display:grid;grid-template-columns:190px 1fr 190px;gap:8px;padding:8px;color:#f3e8c8;font-size:11px">
+        <div style="background:#1c261c;border-radius:8px;padding:10px">플레이어 현황<br><br>금화<br>소유지<br>말/병력<br>효과</div>
+        <div style="display:grid;grid-template-rows:34px 1fr 42px;gap:8px">
+          <div style="background:#2a2418;border-radius:6px;padding:8px">현재 턴과 주사위</div>
+          <div style="background:#172217;border:1px solid #67734f;border-radius:8px;padding:10px;text-align:center">보드</div>
+          <div style="background:#2a2418;border-radius:6px;padding:8px">주요 행동</div>
+        </div>
+        <div style="background:#1c261c;border-radius:8px;padding:10px">상대 현황<br><br>AI 비교<br>위협도<br>최근 행동</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 대전 정보형</h3>
+      <p>좌우 패널로 나와 상대를 비교합니다. 3-4인전과 AI 의사결정이 잘 보이지만 화면이 더 빽빽해집니다.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:220px;background:#111827;border:1px solid #3c4a61;border-radius:10px;display:grid;grid-template-rows:1fr 82px;gap:8px;padding:8px;color:#e5eefc;font-size:11px">
+        <div style="background:#0b1220;border-radius:8px;padding:10px;display:grid;place-items:center">큰 보드 + 최소 HUD</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="background:#1b2538;border-radius:8px;padding:8px">1. 주사위</div>
+          <div style="background:#1b2538;border-radius:8px;padding:8px">2. 이동 선택</div>
+          <div style="background:#1b2538;border-radius:8px;padding:8px">3. 타일 행동</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 단계 안내형</h3>
+      <p>현재 가능한 행동만 하단에 노출합니다. 입문성은 가장 좋고, 고급 정보는 접힘 패널로 숨깁니다.</p>
+    </div>
+  </div>
+</div>
