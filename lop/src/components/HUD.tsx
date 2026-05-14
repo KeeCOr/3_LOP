@@ -1,19 +1,18 @@
-import type { GameState, PlayerType, PlayerState } from '@/lib/gameTypes';
-import { CHARACTERS } from '@/lib/gameData';
+import type { GameState, PlayerState, PlayerType } from '@/lib/gameTypes';
 import { FACTION_COLORS } from '@/lib/factionColors';
 import { CHAR_IMAGE } from '@/lib/charImages';
 
-function getActiveEffects(ps: PlayerState): { label: string; color: string }[] {
-  const fx: { label: string; color: string }[] = [];
-  if (ps.attackBoostActive)       fx.push({ label: '⚔️ 공격↑',          color: 'bg-red-800 text-red-200' });
-  if (ps.freeBuildNext)           fx.push({ label: '🎁 무료건설',         color: 'bg-yellow-800 text-yellow-200' });
-  if (ps.taxExemptTurns > 0)      fx.push({ label: `🧾 세금면제×${ps.taxExemptTurns}`,  color: 'bg-green-800 text-green-200' });
-  if (ps.tollExemptTurns > 0)     fx.push({ label: `🚫 통행료면제×${ps.tollExemptTurns}`, color: 'bg-blue-800 text-blue-200' });
-  if (ps.tollDoubleLaps > 0)      fx.push({ label: `💰 통행료2배×${ps.tollDoubleLaps}`,  color: 'bg-orange-800 text-orange-200' });
-  if (ps.buildDiscountLaps > 0)   fx.push({ label: `🔨 건설할인×${ps.buildDiscountLaps}`, color: 'bg-purple-800 text-purple-200' });
-  if (ps.diceBonusTurns > 0)      fx.push({ label: `🎲 주사위+${ps.diceBonusAmount}×${ps.diceBonusTurns}`, color: 'bg-cyan-800 text-cyan-200' });
-  if (ps.defenseBoostMultiplier > 1) fx.push({ label: '🛡️ 방어↑',        color: 'bg-indigo-800 text-indigo-200' });
-  return fx;
+function activeEffectCount(ps: PlayerState): number {
+  return [
+    ps.attackBoostActive,
+    ps.freeBuildNext,
+    ps.taxExemptTurns > 0,
+    ps.tollExemptTurns > 0,
+    ps.tollDoubleLaps > 0,
+    ps.buildDiscountLaps > 0,
+    ps.diceBonusTurns > 0,
+    ps.defenseBoostMultiplier > 1,
+  ].filter(Boolean).length;
 }
 
 export default function HUD({ state }: { state: GameState }) {
@@ -29,61 +28,46 @@ export default function HUD({ state }: { state: GameState }) {
   }
 
   return (
-    <div className="flex border-b-2 border-gray-800 bg-gray-950">
-      {activePlayers.map(id => {
-        const ps = getPS(id);
-        const pieces = state.pieces.filter(p => p.owner === id && p.troops > 0);
-        const lands = state.tiles.filter(t => t.owner === id).length;
-        const fc = FACTION_COLORS[id];
-        const isCurrent = state.currentTurn === id;
+    <header className="border-b border-gray-800 bg-gray-950/95 px-2 py-1.5">
+      <div className="mx-auto grid max-w-[1500px] gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${activePlayers.length}, minmax(0, 1fr))` }}>
+        {activePlayers.map(id => {
+          const ps = getPS(id);
+          const pieces = state.pieces.filter(p => p.owner === id && p.troops > 0);
+          const lands = state.tiles.filter(t => t.owner === id).length;
+          const troops = pieces.reduce((sum, p) => sum + p.troops, 0);
+          const fc = FACTION_COLORS[id];
+          const isCurrent = state.currentTurn === id;
+          const leadPiece = pieces[0];
 
-        return (
-          <div key={id}
-            className={`flex-1 px-2 py-1 border-r border-gray-800 last:border-r-0 transition-all duration-300
-              ${isCurrent
-                ? `${fc.bg} border-t-4 ${fc.border} brightness-125`
-                : 'border-t-4 border-transparent opacity-50'}`}>
-            {/* Name row */}
-            <div className="flex items-center gap-1 mb-0.5">
-              {isCurrent
-                ? <span className={`text-xs font-black ${fc.textBright} animate-pulse`}>▶</span>
-                : <span className="text-xs text-transparent">▶</span>}
-              <span className={`text-xs font-bold ${isCurrent ? fc.textBright : fc.text}`}>
-                {ps.name}
-              </span>
-              {isCurrent && (
-                <span className={`ml-auto text-[9px] px-1 rounded font-bold ${fc.badge} text-white`}>
-                  턴
-                </span>
-              )}
-            </div>
-            {/* Stats row */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className={`font-bold ${isCurrent ? 'text-yellow-300' : 'text-yellow-600'}`}>
-                💰{ps.gold}
-              </span>
-              <span className={isCurrent ? 'text-gray-300' : 'text-gray-600'}>🏠{lands}</span>
-              {pieces.map(p => (
-                <span key={p.id} className={`flex items-center gap-0.5 ${isCurrent ? fc.textBright : 'text-gray-600'}`}>
-                  <img src={CHAR_IMAGE[p.characterType]} alt={p.characterType}
-                    className="w-5 h-6 object-contain flex-none" />
-                  ⚔️{p.troops}
-                </span>
-              ))}
-            </div>
-            {/* Active effect badges */}
-            {getActiveEffects(ps).length > 0 && (
-              <div className="flex flex-wrap gap-[3px] mt-0.5">
-                {getActiveEffects(ps).map(fx => (
-                  <span key={fx.label} className={`text-[9px] font-bold px-1 py-[1px] rounded ${fx.color}`}>
-                    {fx.label}
-                  </span>
-                ))}
+          return (
+            <section key={id}
+              className={`min-w-0 rounded border px-2 py-1 transition-all
+                ${isCurrent ? `${fc.border} ${fc.bg} shadow-sm` : 'border-gray-800 bg-gray-900/45 opacity-70'}`}>
+              <div className="flex items-center gap-2">
+                {leadPiece && (
+                  <img src={CHAR_IMAGE[leadPiece.characterType]} alt={leadPiece.characterType}
+                    className="h-9 w-8 flex-none object-contain" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <span className={`truncate text-xs font-black ${isCurrent ? fc.textBright : fc.text}`}>{ps.name}</span>
+                    {isCurrent && <span className="rounded bg-yellow-400 px-1 text-[9px] font-black text-black">TURN</span>}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+                    <span className="font-bold text-yellow-300">{ps.gold}G</span>
+                    <span className="text-gray-300">땅 {lands}</span>
+                    <span className="text-gray-300">병력 {troops}</span>
+                    {activeEffectCount(ps) > 0 && (
+                      <span className="rounded bg-cyan-950 px-1 font-bold text-cyan-200">효과 {activeEffectCount(ps)}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+            </section>
+          );
+        })}
+      </div>
+    </header>
   );
 }

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LOP 기획서</title>
+  <style>
+    body { margin: 0; background: #0b1020; color: #e5e7eb; font-family: Arial, "Malgun Gothic", sans-serif; line-height: 1.65; }
+    main { max-width: 920px; margin: 0 auto; padding: 40px 24px 72px; }
+    h1, h2 { color: #facc15; line-height: 1.25; }
+    h1 { font-size: 34px; }
+    h2 { margin-top: 36px; font-size: 22px; }
+    p, li { color: #cbd5e1; }
+    section { border-top: 1px solid #1f2937; margin-top: 28px; padding-top: 20px; }
+    strong { color: #fff; }
+    .note { border: 1px solid #854d0e; background: rgba(113, 63, 18, .25); padding: 16px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LOP 기획서</h1>
+    <p>최신화: 2026-05-14</p>
+
+    <section>
+      <h2>게임 개요</h2>
+      <p>LOP는 짧은 플레이타임을 목표로 한 영토 쟁탈 보드게임이다. 플레이어는 주사위를 굴려 말을 이동하고, 영토를 점령하거나 전투하며, 건물을 통해 통행료와 회차 생산을 강화한다.</p>
+    </section>
+
+    <section>
+      <h2>최신 UX 방향</h2>
+      <div class="note">
+        <strong>A+C 레이아웃:</strong> 보드를 화면의 중심에 크게 유지하고, 현재 해야 할 행동만 하단 액션 바에서 단계별로 안내한다.
+      </div>
+    </section>
+
+    <section>
+      <h2>플레이 화면 구조</h2>
+      <ol>
+        <li><strong>상단 HUD:</strong> 골드, 영토 수, 병력 합계, 활성 효과 수를 압축 표시한다.</li>
+        <li><strong>중앙 보드:</strong> 5x4 보드를 가장 큰 의사결정 영역으로 유지한다.</li>
+        <li><strong>우측 타일 상세 패널:</strong> 선택한 타일의 소유자, 통행료, 병력, 건물, 생산 정보를 고정 표시한다.</li>
+        <li><strong>하단 액션 바:</strong> 현재 phase를 주사위, 말 선택, 타일 행동, 전투, 정산 같은 단계로 번역한다.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>시작/온보딩 화면</h2>
+      <ol>
+        <li><strong>게임 목표:</strong> 승리 조건과 턴 루프를 짧게 설명한다.</li>
+        <li><strong>게임 설정:</strong> 참가 인원과 난이도를 선택한다.</li>
+        <li><strong>캐릭터 공개:</strong> 랜덤 캐릭터의 역할과 첫 턴 전략 힌트를 보여준다.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>기획적 개선점</h2>
+      <ul>
+        <li>초보자는 현재 해야 할 일을 하단 액션 바에서 즉시 알 수 있어야 한다.</li>
+        <li>숙련자는 보드와 우측 패널만 보고 타일 수익과 위험도를 빠르게 비교할 수 있어야 한다.</li>
+        <li>중앙 오버레이는 전투, 이벤트, 상점처럼 선택지가 많은 순간에 집중 사용한다.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>구현 상태</h2>
+      <ul>
+        <li>상단 HUD 압축 적용.</li>
+        <li>보드 중심 레이아웃과 우측 타일 상세 패널 적용.</li>
+        <li>하단 phase 안내 액션 바 적용.</li>
+        <li>시작 화면을 목표, 설정, 캐릭터 공개 흐름으로 재구성.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

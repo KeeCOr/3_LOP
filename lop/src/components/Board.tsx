@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef } from 'react';
 import type { GameState, Piece } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
@@ -21,6 +21,8 @@ import LapBonusModal from './LapBonusModal';
 import PieceInfoModal from './PieceInfoModal';
 import MercenaryModal from './MercenaryModal';
 import StopAtTileModal from './StopAtTileModal';
+import TileDetailPanel from './TileDetailPanel';
+import TurnActionBar from './TurnActionBar';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -47,6 +49,7 @@ export default function Board({ state, dispatch }: Props) {
   const [viewPieceId, setViewPieceId] = useState<string | null>(null);
   const [pieceSelectorReady, setPieceSelectorReady] = useState(false);
   const [infoTileId, setInfoTileId] = useState<number | null>(null);
+  const [selectedTileId, setSelectedTileId] = useState<number | null>(activeTileId >= 0 ? activeTileId : 0);
   const [aiNotif, setAiNotif] = useState<string | null>(null);
   const [turnBanner, setTurnBanner] = useState<string | null>(null);
 const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: string; fc: typeof FACTION_COLORS['player'] } | null>(null);
@@ -159,7 +162,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
     prevLogLen.current = newLen;
   }, [state.log, isPlayerTurn]);
 
-  // Card hint — always shows currently usable cards (no auto-dismiss)
+  // Card hint ??always shows currently usable cards (no auto-dismiss)
   // Turn change banner
   useEffect(() => {
     if (state.currentTurn !== prevTurn.current) {
@@ -188,8 +191,14 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
 
 
   const viewPiece = viewPieceId ? state.pieces.find(p => p.id === viewPieceId) : null;
+  const selectedTile = state.tiles.find(t => t.id === (selectedTileId ?? activeTileId)) ?? null;
+
+  useEffect(() => {
+    if (activeTileId >= 0) setSelectedTileId(activeTileId);
+  }, [activeTileId]);
 
   function handleTileClick(tileIdx: number) {
+    setSelectedTileId(tileIdx);
     if (isChoosingTile) {
       dispatch({ type: 'CHOOSE_MOVE_TILE', tileId: tileIdx });
       return;
@@ -206,7 +215,6 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
       setInfoTileId(prev => prev === tileIdx ? null : tileIdx);
     }
   }
-
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col overflow-hidden"
       onClick={() => setInfoTileId(null)}>
@@ -215,60 +223,65 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
         <HUD state={state} />
       </div>
 
-      {/* Board grid */}
-      <div className={`flex-1 min-h-0 flex flex-col px-1 py-1 ${isChoosingTile || isForcedSelling ? 'cursor-crosshair' : ''}`}
+      {/* Board + persistent tile panel */}
+      <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-2 px-2 py-2 ${isChoosingTile || isForcedSelling ? 'cursor-crosshair' : ''}`}
         onClick={e => e.stopPropagation()}>
-        {(isChoosingTile || isForcedSelling) && (
-          <div className={`text-xs font-bold text-center mb-0.5 animate-pulse ${isChoosingTile ? 'text-yellow-300' : 'text-red-300'}`}>
-            {isChoosingTile ? '🗺️ 이동할 칸 선택' : '💸 매각할 땅 선택 (60% 반환)'}
+        <div className="flex min-h-0 flex-col">
+          {(isChoosingTile || isForcedSelling) && (
+            <div className={`text-xs font-bold text-center mb-1 animate-pulse ${isChoosingTile ? 'text-yellow-300' : 'text-red-300'}`}>
+              {isChoosingTile ? '이동할 타일을 선택하세요' : '매각할 내 영토를 선택하세요 (60% 반환)'}
+            </div>
+          )}
+          {state.dragonPending && !state.dragon && (
+            <div className="text-xs font-bold text-center mb-1 text-orange-400 animate-pulse">
+              드래곤 각성까지 {Math.max(0, state.dragonPending.summonAtLap - state.lapCount)} Lap
+            </div>
+          )}
+          {state.dragon && state.dragon.troops > 0 && (
+            <div className="text-xs font-bold text-center mb-1 text-red-400 animate-pulse">
+              드래곤 출현 중 ({state.dragon.troops}명 / {state.dragon.position}번 타일)
+            </div>
+          )}
+          <div className="grid gap-1 flex-1 min-h-0"
+            style={{
+              gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+              gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
+            }}>
+            {TILE_DEFINITIONS.map(def => {
+              const tile = state.tiles.find(t => t.id === def.index)!;
+              return (
+                <BoardTile key={def.index} tile={tile} pieces={displayPieces}
+                  isActive={isChoosingTile || isForcedSelling ? false : def.index === activeTileId}
+                  isMoving={def.index === movingTileId}
+                  isSelectable={isForcedSelling && tile.owner === 'player' && tile.type === 'land'}
+                  isInfoOpen={infoTileId === def.index}
+                  lapCount={state.lapCount}
+                  dragon={state.dragon}
+                  onClick={() => handleTileClick(def.index)}
+                  onPieceClick={pid => setViewPieceId(pid)} />
+              );
+            })}
           </div>
-        )}
-        {state.dragonPending && !state.dragon && (
-          <div className="text-xs font-bold text-center mb-0.5 text-orange-400 animate-pulse">
-            🐉 드래곤 각성까지 {Math.max(0, state.dragonPending.summonAtLap - state.lapCount)}바퀴
-          </div>
-        )}
-        {state.dragon && state.dragon.troops > 0 && (
-          <div className="text-xs font-bold text-center mb-0.5 text-red-400 animate-pulse">
-            🐉 드래곤 출현 중! ({state.dragon.troops}명) — {state.dragon.position}번 칸
-          </div>
-        )}
-        <div className="grid gap-1 flex-1 min-h-0"
-          style={{
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gridTemplateRows: 'repeat(4, 1fr)',
-          }}>
-          {TILE_DEFINITIONS.map(def => {
-            const tile = state.tiles.find(t => t.id === def.index)!;
-            return (
-              <BoardTile key={def.index} tile={tile} pieces={displayPieces}
-                isActive={isChoosingTile || isForcedSelling ? false : def.index === activeTileId}
-                isMoving={def.index === movingTileId}
-                isSelectable={isForcedSelling && tile.owner === 'player' && tile.type === 'land'}
-                isInfoOpen={infoTileId === def.index}
-                lapCount={state.lapCount}
-                dragon={state.dragon}
-                onClick={() => handleTileClick(def.index)}
-                onPieceClick={pid => setViewPieceId(pid)} />
-            );
-          })}
         </div>
+        <TileDetailPanel state={state} tile={selectedTile} />
       </div>
 
-      {/* Dice notification overlay — all players */}
+      <TurnActionBar state={state} isAnimating={isAnimating} />
+
+      {/* Dice notification overlay ??all players */}
       {diceNotif && !turnBanner && (
         <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-35">
           <div className={`flex flex-col items-center gap-3 px-8 py-6 rounded-3xl border-2 shadow-2xl
             ${diceNotif.fc.border} bg-gray-950/95`}>
             <div className={`text-sm font-bold ${diceNotif.fc.text}`}>{diceNotif.name} 주사위</div>
             <div className="flex items-center gap-5">
-              <span className="text-5xl leading-none">{['0️⃣','1️⃣','2️⃣','3️⃣'][Math.min(diceNotif.d1,3)]}</span>
+              <span className="text-5xl leading-none">{['0','1','2','3'][Math.min(diceNotif.d1,3)]}</span>
               <span className="text-2xl text-gray-500">+</span>
-              <span className="text-5xl leading-none">{['0️⃣','1️⃣','2️⃣','3️⃣'][Math.min(diceNotif.d2,3)]}</span>
+              <span className="text-5xl leading-none">{['0','1','2','3'][Math.min(diceNotif.d2,3)]}</span>
             </div>
             <div className={`text-3xl font-black ${diceNotif.fc.textBright}`}>{diceNotif.total}칸</div>
             {diceNotif.d1 === diceNotif.d2 && (
-              <div className="text-yellow-400 font-bold text-sm animate-pulse">🎯 더블! 보너스 턴!</div>
+              <div className="text-yellow-400 font-bold text-sm animate-pulse">더블! 보너스 턴</div>
             )}
           </div>
         </div>
@@ -287,7 +300,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
         </div>
       )}
 
-      {/* Turn change banner — top-center, doesn't cover board */}
+      {/* Turn change banner ??top-center, doesn't cover board */}
       {turnBanner && (
         <div className="fixed top-0 inset-x-0 pointer-events-none flex justify-center pt-14 z-40">
           <div className={`px-8 py-2.5 rounded-b-2xl border-b-2 border-x-2 text-lg font-black text-center shadow-2xl
@@ -298,7 +311,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
         </div>
       )}
 
-      {/* AI action notification — fixed center, only when no other overlay */}
+      {/* AI action notification ??fixed center, only when no other overlay */}
       {aiNotif && !turnBanner && !diceNotif && !moveNotif && (
         <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-25">
           <div className={`px-7 py-4 rounded-2xl border-2 text-center max-w-[320px] shadow-2xl ${fc.bg} ${fc.border}`}
@@ -329,7 +342,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
           <div key={a.id}
             className={`absolute text-lg font-bold ${a.amount > 0 ? 'text-yellow-300' : 'text-red-400'}`}
             style={{ animation: 'goldFloat 1.8s ease-out forwards' }}>
-            {a.amount > 0 ? `+${a.amount}💰` : `${a.amount}💰`}
+            {a.amount > 0 ? `+${a.amount}G` : `${a.amount}G`}
           </div>
         ))}
       </div>
@@ -367,18 +380,18 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
       {!isAnimating && !state.lapBonusAnim && !state.pendingStopTiles && state.turnPhase === 'event_card' && state.activeEvent && (
         <EventModal state={state} dispatch={dispatch} />
       )}
-      {/* Forced sell — inline strip instead of modal */}
+      {/* Forced sell ??inline strip instead of modal */}
       {isForcedSelling && !isAnimating && !state.lapBonusAnim && !state.pendingStopTiles && (
         <div className="flex-none px-3 py-2 bg-red-950/80 border-t-2 border-red-700 flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-0">
-            <span className="text-red-300 font-bold text-sm">💸 통행세 부족 </span>
-            <span className="text-xs text-gray-300">필요 <b className="text-red-300">{forcedSellToll}골드</b> / 보유 <b className="text-yellow-300">{state.player.gold}골드</b></span>
-            {!canPayToll && <span className="text-xs text-gray-500 ml-1">(부족 {forcedSellToll - state.player.gold}골드)</span>}
+            <span className="text-red-300 font-bold text-sm">통행료 부족 </span>
+            <span className="text-xs text-gray-300">필요 <b className="text-red-300">{forcedSellToll}G</b> / 보유 <b className="text-yellow-300">{state.player.gold}G</b></span>
+            {!canPayToll && <span className="text-xs text-gray-500 ml-1">(부족 {forcedSellToll - state.player.gold}G)</span>}
           </div>
           {canPayToll && (
             <button onClick={() => dispatch({ type: 'CONFIRM_FORCED_SELL' })}
               className="px-3 py-1.5 bg-green-700 hover:bg-green-600 rounded-lg text-sm font-bold shrink-0">
-              {forcedSellToll}골드 납부
+              {forcedSellToll}G 납부
             </button>
           )}
           {!canPayToll && ownedSellableLands.length === 0 && (
@@ -398,8 +411,8 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
       {state.tollPayAnim && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
           <div className="bg-red-900/80 border border-red-500 rounded-xl px-4 py-2 text-center">
-            <div className="text-red-300 text-sm">💸 통행세</div>
-            <div className="text-white font-bold text-xl">{state.tollPayAnim.amount}골드</div>
+            <div className="text-red-300 text-sm">통행료</div>
+            <div className="text-white font-bold text-xl">{state.tollPayAnim.amount}G</div>
             <div className="text-gray-400 text-xs">→ {state.tollPayAnim.to}</div>
           </div>
         </div>

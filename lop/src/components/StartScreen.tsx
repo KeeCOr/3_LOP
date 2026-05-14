@@ -4,220 +4,181 @@ import type { CharacterType, Difficulty } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
 import { CHAR_IMAGE } from '@/lib/charImages';
 
-const VERSION = '0.2.0';
+const VERSION = '0.4.1';
 
 interface Props { onStart: (char: CharacterType, diff: Difficulty, playerCount: 2 | 3 | 4) => void; }
 
 const CHARACTER_TYPES = Object.keys(CHARACTERS) as CharacterType[];
-
-// Delays for each spin step (ms). 11 steps so we naturally land on finalIdx.
 const SPIN_DELAYS = [65, 70, 85, 105, 135, 175, 215, 265, 320, 390, 440];
-const N = CHARACTER_TYPES.length; // 4
+
+const CHARACTER_LABEL: Record<CharacterType, { name: string; role: string; hint: string }> = {
+  pirate: { name: '해적', role: '전투 보상형', hint: '초반에는 중립 영토 전투를 자주 걸어 골드 보상을 확보하세요.' },
+  agitator: { name: '선동가', role: '병력 보급형', hint: '여러 말을 굴리며 병력을 분산시키면 회차 보급 효율이 좋아집니다.' },
+  smuggler: { name: '밀수꾼', role: '골드 성장형', hint: '초반 구매를 빠르게 진행해 통행료 수익 기반을 만드세요.' },
+  swindler: { name: '사기꾼', role: '주사위 변수형', hint: '낮은 주사위도 이득으로 바뀌니 위험한 타일 앞에서 과감히 굴려볼 만합니다.' },
+  warlock: { name: '흑마술사', role: '견제형', hint: '상대 병력이 쌓이는 영토를 견제하면서 안전한 내 땅을 늘리세요.' },
+  cleric: { name: '종교가', role: '영토 강화형', hint: '점령지를 넓힌 뒤 회차마다 병력을 받는 구조를 노리세요.' },
+  general: { name: '장군', role: '대규모 병력형', hint: '최대 병력이 높으니 핵심 말 하나를 강하게 키워 돌파하세요.' },
+};
 
 export default function StartScreen({ onStart }: Props) {
-  const [screen, setScreen] = useState<'objectives' | 'setup' | 'selecting'>('objectives');
+  const [screen, setScreen] = useState<'goal' | 'setup' | 'reveal'>('goal');
   const [diff, setDiff] = useState<Difficulty>('normal');
   const [playerCount, setPlayerCount] = useState<2 | 3 | 4>(2);
   const [spinIdx, setSpinIdx] = useState(0);
   const [finalChar, setFinalChar] = useState<CharacterType | null>(null);
   const [revealed, setRevealed] = useState(false);
 
-  function handleStart() {
+  function beginReveal() {
     const randomChar = CHARACTER_TYPES[Math.floor(Math.random() * CHARACTER_TYPES.length)];
     const finalIdx = CHARACTER_TYPES.indexOf(randomChar);
-    // startIdx chosen so the sequence naturally ends on finalIdx
-    // (startIdx + SPIN_DELAYS.length) % N === finalIdx
-    const startIdx = (finalIdx - SPIN_DELAYS.length % N + N * 100) % N;
+    const startIdx = (finalIdx - SPIN_DELAYS.length % CHARACTER_TYPES.length + CHARACTER_TYPES.length * 100) % CHARACTER_TYPES.length;
 
     setFinalChar(randomChar);
     setRevealed(false);
     setSpinIdx(startIdx);
-    setScreen('selecting');
+    setScreen('reveal');
 
-    let cumDelay = 0;
+    let delay = 0;
     for (let i = 0; i < SPIN_DELAYS.length; i++) {
-      cumDelay += SPIN_DELAYS[i];
-      const nextIdx = (startIdx + i + 1) % N;
-      const d = cumDelay;
-      setTimeout(() => setSpinIdx(nextIdx), d);
+      delay += SPIN_DELAYS[i];
+      const nextIdx = (startIdx + i + 1) % CHARACTER_TYPES.length;
+      setTimeout(() => setSpinIdx(nextIdx), delay);
     }
-    setTimeout(() => setRevealed(true), cumDelay + 180);
-    setTimeout(() => onStart(randomChar, diff, playerCount), cumDelay + 1700);
+    setTimeout(() => setRevealed(true), delay + 160);
+    setTimeout(() => onStart(randomChar, diff, playerCount), delay + 1900);
   }
 
-  /* ── 캐릭터 선택 연출 ── */
-  if (screen === 'selecting') {
-    return (
-      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center gap-7 p-8">
-        <h1 className="text-3xl font-bold text-yellow-400">⚔️ Lord of Poly</h1>
-        <div className="text-xs text-gray-600">v{VERSION}</div>
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#17213a,#05070d_58%)] text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-[0.22em] text-yellow-400">Land of Power</div>
+            <h1 className="mt-1 text-3xl font-black text-white">LOP</h1>
+          </div>
+          <div className="text-xs font-bold text-gray-500">v{VERSION}</div>
+        </header>
 
-        <p className={`text-base font-bold transition-colors duration-300 ${revealed ? 'text-yellow-300' : 'text-gray-400'}`}>
-          {revealed ? '✨ 캐릭터 선택 완료!' : '🎲 캐릭터를 선택하는 중...'}
-        </p>
+        {screen === 'goal' && (
+          <section className="grid flex-1 items-center gap-6 py-8 lg:grid-cols-[1fr_360px]">
+            <div>
+              <h2 className="max-w-2xl text-4xl font-black leading-tight text-yellow-300">
+                짧고 빠른 영토 쟁탈 보드게임
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-300">
+                주사위를 굴려 말을 이동하고, 영토를 점령하고, 건물을 세워 통행료와 회차 생산을 키우세요.
+                상대의 골드를 고갈시키거나 영토 기반을 무너뜨리면 승리합니다.
+              </p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                {[
+                  ['1', '굴리기', '주사위 결과로 이동 거리를 정합니다.'],
+                  ['2', '점령하기', '전투나 구매로 영토를 확보합니다.'],
+                  ['3', '키우기', '병력과 건물로 수익 구조를 만듭니다.'],
+                ].map(([num, title, body]) => (
+                  <div key={num} className="rounded border border-gray-800 bg-gray-950/70 p-4">
+                    <div className="text-xs font-black text-yellow-400">{num}</div>
+                    <div className="mt-1 font-black text-white">{title}</div>
+                    <p className="mt-2 text-xs leading-5 text-gray-400">{body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded border border-yellow-600/70 bg-gray-950/80 p-5 shadow-2xl">
+              <h3 className="text-lg font-black text-yellow-300">승리 조건</h3>
+              <ul className="mt-4 space-y-3 text-sm text-gray-300">
+                <li><b className="text-white">경제 승리:</b> 상대 골드를 0 이하로 압박</li>
+                <li><b className="text-white">영토 승리:</b> 주요 영토와 생산 기반 장악</li>
+                <li><b className="text-white">전투 승리:</b> 병력 우위로 위험 타일 돌파</li>
+              </ul>
+              <button onClick={() => setScreen('setup')}
+                className="mt-6 w-full rounded bg-yellow-400 px-5 py-3 font-black text-black hover:bg-yellow-300">
+                설정으로 이동
+              </button>
+            </div>
+          </section>
+        )}
 
-        <div className="grid grid-cols-2 gap-3">
-          {CHARACTER_TYPES.map((c, i) => {
-            const cd = CHARACTERS[c];
-            const isActive = !revealed && spinIdx === i;
-            const isFinal = revealed && finalChar === c;
-
-            return (
-              <div key={c}
-                className={`w-38 rounded-xl border-2 p-4 text-center select-none
-                  transition-all duration-150
-                  ${isFinal
-                    ? 'border-yellow-400 bg-yellow-900/30 scale-110 shadow-lg shadow-yellow-500/30'
-                    : isActive
-                      ? 'border-blue-400 bg-blue-900/30 scale-105'
-                      : revealed
-                        ? 'border-gray-800 bg-gray-900/30 opacity-25 scale-95'
-                        : 'border-gray-700 bg-gray-900 opacity-45'
-                  }`}
-                style={{ width: '9rem' }}>
-                <div className={`w-20 h-24 mx-auto mb-1 transition-all duration-150 ${isActive || isFinal ? '' : 'grayscale opacity-60'}`}>
-                  <img src={CHAR_IMAGE[c]} alt={cd.name} className="w-full h-full object-contain" />
+        {screen === 'setup' && (
+          <section className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-8">
+            <h2 className="text-2xl font-black text-yellow-300">게임 설정</h2>
+            <div className="mt-5 rounded border border-gray-800 bg-gray-950/80 p-5">
+              <div>
+                <div className="text-xs font-black uppercase tracking-wide text-gray-500">참가 인원</div>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {([2, 3, 4] as const).map(n => (
+                    <button key={n} onClick={() => setPlayerCount(n)}
+                      className={`rounded border px-3 py-3 text-sm font-black ${playerCount === n ? 'border-yellow-400 bg-yellow-400 text-black' : 'border-gray-700 bg-gray-900 text-gray-300 hover:border-gray-500'}`}>
+                      {n}명
+                    </button>
+                  ))}
                 </div>
-                <div className={`font-bold text-sm ${isFinal ? 'text-yellow-300' : isActive ? 'text-blue-300' : 'text-gray-500'}`}>
-                  {cd.name}
-                </div>
-                <div className={`text-xs mt-0.5 ${isFinal ? 'text-purple-300' : 'text-gray-600'}`}>
-                  {cd.skill.name}
+                <p className="mt-2 text-xs text-gray-500">플레이어 1명과 AI {playerCount - 1}명이 대결합니다.</p>
+              </div>
+
+              <div className="mt-6">
+                <div className="text-xs font-black uppercase tracking-wide text-gray-500">난이도</div>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {([
+                    ['easy', '쉬움', '여유로운 경제'],
+                    ['normal', '보통', '표준 압박'],
+                    ['hard', '어려움', '강한 AI'],
+                  ] as [Difficulty, string, string][]).map(([value, label, desc]) => (
+                    <button key={value} onClick={() => setDiff(value)}
+                      className={`rounded border px-3 py-3 text-left ${diff === value ? 'border-yellow-400 bg-yellow-400 text-black' : 'border-gray-700 bg-gray-900 text-gray-300 hover:border-gray-500'}`}>
+                      <div className="text-sm font-black">{label}</div>
+                      <div className="mt-0.5 text-[11px] opacity-70">{desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {revealed && finalChar && (
-          <div className="bg-gray-800 border border-yellow-500/40 rounded-xl px-7 py-4 text-center">
-            <div className="flex items-center justify-center gap-3 mb-1">
-              <img src={CHAR_IMAGE[finalChar]} alt={CHARACTERS[finalChar].name}
-                className="w-14 h-16 object-contain flex-none" />
-              <div className="text-xl font-bold text-yellow-400">{CHARACTERS[finalChar].name}</div>
+            <div className="mt-5 flex gap-3">
+              <button onClick={() => setScreen('goal')}
+                className="flex-1 rounded border border-gray-700 px-5 py-3 text-sm font-bold text-gray-300 hover:border-gray-500">
+                목표 다시 보기
+              </button>
+              <button onClick={beginReveal}
+                className="flex-[2] rounded bg-yellow-400 px-5 py-3 font-black text-black hover:bg-yellow-300">
+                캐릭터 뽑고 시작
+              </button>
             </div>
-            <div className="text-sm text-purple-300">
-              ✦ {CHARACTERS[finalChar].skill.name}: {CHARACTERS[finalChar].skill.desc}
+          </section>
+        )}
+
+        {screen === 'reveal' && (
+          <section className="flex flex-1 flex-col items-center justify-center py-8">
+            <h2 className="text-xl font-black text-yellow-300">{revealed ? '캐릭터 확정' : '캐릭터 선택 중...'}</h2>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {CHARACTER_TYPES.map((type, index) => {
+                const isActive = !revealed && spinIdx === index;
+                const isFinal = revealed && finalChar === type;
+                const label = CHARACTER_LABEL[type];
+
+                return (
+                  <div key={type}
+                    className={`w-36 rounded border p-3 text-center transition-all
+                      ${isFinal ? 'scale-110 border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/20' : isActive ? 'scale-105 border-sky-400 bg-sky-900/30' : 'border-gray-800 bg-gray-950/70 opacity-60'}`}>
+                    <img src={CHAR_IMAGE[type]} alt={label.name} className="mx-auto h-24 w-20 object-contain" />
+                    <div className={`mt-2 text-sm font-black ${isFinal ? 'text-yellow-300' : 'text-white'}`}>{label.name}</div>
+                    <div className="mt-0.5 text-xs text-gray-400">{label.role}</div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="text-xs text-gray-500 mt-2 animate-pulse">잠시 후 게임이 시작됩니다...</div>
-          </div>
+
+            {revealed && finalChar && (
+              <div className="mt-8 max-w-lg rounded border border-yellow-500/60 bg-gray-950/90 p-5 text-center">
+                <div className="text-2xl font-black text-yellow-300">{CHARACTER_LABEL[finalChar].name}</div>
+                <div className="mt-1 text-sm font-bold text-sky-300">{CHARACTER_LABEL[finalChar].role}</div>
+                <p className="mt-3 text-sm leading-6 text-gray-300">{CHARACTER_LABEL[finalChar].hint}</p>
+                <div className="mt-4 text-xs font-bold text-gray-500">잠시 후 게임이 시작됩니다.</div>
+              </div>
+            )}
+          </section>
         )}
       </div>
-    );
-  }
-
-  /* ── 설정 화면 ── */
-  if (screen === 'setup') {
-    return (
-      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center gap-6 p-8">
-        <div>
-          <h1 className="text-4xl font-bold text-yellow-400 text-center">⚔️ Lord of Poly</h1>
-          <div className="text-xs text-gray-600 text-center mt-0.5">v{VERSION}</div>
-        </div>
-
-        <div className="bg-gray-900 rounded-xl p-6 w-full max-w-sm border border-gray-700 space-y-5">
-          <div>
-            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">인원 수</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {([2, 3, 4] as const).map(n => (
-                <button key={n} onClick={() => setPlayerCount(n)}
-                  className={`py-2 rounded-lg border-2 font-bold transition-all ${playerCount === n ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                  {n}명
-                </button>
-              ))}
-            </div>
-            <div className="text-xs text-gray-500 mt-1.5 text-center">
-              플레이어 1명 + AI {playerCount - 1}명
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-2">난이도</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {(['easy', 'normal', 'hard'] as Difficulty[]).map(d => (
-                <button key={d} onClick={() => setDiff(d)}
-                  className={`py-2 rounded-lg border-2 font-bold transition-all ${diff === d ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                  {d === 'easy' ? '쉬움' : d === 'normal' ? '보통' : '어려움'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-xs text-gray-500 text-center border-t border-gray-700 pt-3">
-            캐릭터는 게임 시작 시 랜덤으로 결정됩니다
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={() => setScreen('objectives')}
-            className="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 rounded-lg text-sm transition-colors">
-            ← 목표 보기
-          </button>
-          <button onClick={handleStart}
-            className="px-12 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-lg transition-colors">
-            게임 시작
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── 목표 화면 ── */
-  return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center gap-6 p-8">
-      <div>
-        <h1 className="text-4xl font-bold text-yellow-400 text-center">⚔️ Lord of Poly</h1>
-        <div className="text-xs text-gray-600 text-center mt-0.5">v{VERSION}</div>
-      </div>
-
-      <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-gray-700">
-        <h2 className="text-lg font-bold text-yellow-300 mb-4 text-center">🏆 게임 목표</h2>
-        <div className="space-y-3 text-sm text-gray-300">
-          <div className="flex gap-3">
-            <span className="text-2xl flex-none">🌍</span>
-            <div>
-              <div className="font-bold text-white">영토 정복</div>
-              <div>땅을 사거나 전투로 빼앗아 영토를 넓히세요. 건물을 지어 수비와 수입을 높이세요.</div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-2xl flex-none">💰</span>
-            <div>
-              <div className="font-bold text-white">경제 지배</div>
-              <div>상대가 통행세를 낼 때 골드를 벌고, 한 바퀴 돌면 영토에서 수입과 병력이 보충됩니다.</div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-2xl flex-none">⚔️</span>
-            <div>
-              <div className="font-bold text-white">군사 전략</div>
-              <div>병사마다 상성이 있습니다. 검사↔창병↔기마병의 상성을 활용해 전투를 유리하게 이끄세요.</div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-2xl flex-none">💀</span>
-            <div>
-              <div className="font-bold text-white">승리 조건</div>
-              <div>상대의 골드를 0으로 만들거나, 영토를 모두 빼앗아 항복하게 하면 승리!</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5 pt-4 border-t border-gray-700">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">병사 상성</div>
-          <div className="grid grid-cols-2 gap-1.5 text-xs text-gray-400">
-            <div>⚔️ 검사 → 창병에 강함</div>
-            <div>🏹 궁수 → 검사·창병에 강함</div>
-            <div>🐴 기마병 → 검사·궁수에 강함</div>
-            <div>🔱 창병 → 기마병에 강함</div>
-          </div>
-        </div>
-      </div>
-
-      <button onClick={() => setScreen('setup')}
-        className="px-12 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-lg transition-colors">
-        게임 설정 →
-      </button>
-    </div>
+    </main>
   );
 }
