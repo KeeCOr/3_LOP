@@ -305,6 +305,177 @@ function executeDragonBattle(state: GameState): GameState {
   }, owner, { attackBoostActive: false });
 }
 
+function resolvePieceMove(
+  state: GameState,
+  pieceId: string,
+  newPos: number,
+  steps: number,
+  canAskStop: boolean,
+): GameState {
+  const piece = state.pieces.find(p => p.id === pieceId);
+  if (!piece) return state;
+  const owner = state.currentTurn;
+
+  const passedTileIds: Set<number> = new Set();
+  for (let i = 1; i < steps; i++) passedTileIds.add(nextPosition(piece.position, i));
+  const ownedPassedIds: number[] = [];
+  for (const tileId of passedTileIds) {
+    const tile = state.tiles.find(t => t.id === tileId);
+    if (tile?.owner === owner) ownedPassedIds.push(tileId);
+  }
+
+  if (canAskStop && owner === 'player' && ownedPassedIds.length > 0) {
+    return {
+      ...state,
+      selectedPieceId: piece.id,
+      pendingStopTiles: ownedPassedIds.map(id => ({ tileId: id, finalTileId: newPos, steps })),
+      turnPhase: 'choose_stop',
+    };
+  }
+
+  const passedStart = didPassStart(piece.position, steps, piece.startTileIndex);
+  let newState: GameState = {
+    ...state,
+    pieces: state.pieces.map(p => p.id === piece.id ? { ...p, position: newPos } : p),
+    selectedPieceId: piece.id,
+    pendingStopTiles: null,
+    log: [...state.log, `${getPS(state, owner).name} ${piece.id} → ${newPos}번 칸`],
+  };
+
+  if (passedStart) {
+    const lapIncome = state.tiles.filter(t => t.owner === owner).reduce((sum, t) => sum + getLapIncome(t), 0);
+    const ownerPS = getPS(newState, owner);
+    newState = setPS(newState, owner, { gold: ownerPS.gold + LAP_GOLD_BONUS + lapIncome });
+
+    let totalTileProduction = 0;
+    const tileBreakdown: TroopComp = {};
+    const tileDetails: Array<{ tileId: number; amount: number; troopType: TroopType }> = [];
+    newState = {
+      ...newState,
+      tiles: newState.tiles.map(t => {
+        if (t.owner !== owner || (t.type !== 'land' && t.type !== 'start_p' && t.type !== 'start_e') || t.troops === 0) return t;
+        const produce = t.baseLapProduction + getLapTroops(t);
+        totalTileProduction += produce;
+        const dominant = dominantTroopType(t.garrison);
+        tileBreakdown[dominant] = (tileBreakdown[dominant] ?? 0) + produce;
+        tileDetails.push({ tileId: t.id, amount: produce, troopType: dominant });
+        return { ...t, troops: t.troops + produce, garrison: addToComp(t.garrison, dominant, produce) };
+      }),
+      log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 영토 병력 생산 +${totalTileProduction}`],
+    };
+
+    const lapPiece = newState.pieces.find(p => p.id === piece.id)!;
+    switch (lapPiece.characterType) {
+      case 'agitator': {
+        const t = randomTroopType();
+        newState = {
+          ...newState,
+          pieces: newState.pieces.map(p => p.id === lapPiece.id
+            ? { ...p, troops: p.troops + 2, composition: addToComp(p.composition, t, 2) }
+            : p),
+          log: [...newState.log, `선동가 스킬: ${TROOP_DATA[t].name} 2명 합류`],
+        };
+        break;
+      }
+      case 'warlock': {
+        const enemies = newState.pieces.filter(p => p.owner !== owner && p.troops > 0);
+        if (enemies.length > 0) {
+          const target = enemies[Math.floor(Math.random() * enemies.length)];
+          const kill = Math.min(2, target.troops);
+          newState = {
+            ...newState,
+            pieces: newState.pieces.map(p => p.id === target.id
+              ? { ...p, troops: p.troops - kill, composition: removeFromComp(p.composition, kill) }
+              : p),
+            log: [...newState.log, `흑마술사 스킬: ${getPS(newState, target.owner).name} 병력 ${kill}명 저주`],
+          };
+        }
+        break;
+      }
+      case 'smuggler': {
+        const ps2 = getPS(newState, owner);
+        newState = setPS({ ...newState, log: [...newState.log, '밀수꾼 스킬: 골드 +200'] }, owner, { gold: ps2.gold + 200 });
+        break;
+      }
+      case 'cleric': {
+        const ownedTiles = newState.tiles.filter(t => t.owner === owner && (t.type === 'land' || t.type === 'start_p' || t.type === 'start_e'));
+        if (ownedTiles.length > 0) {
+          const blessLog: string[] = [];
+          let updatedTiles = [...newState.tiles];
+          for (let i = 0; i < 3; i++) {
+            const target = ownedTiles[Math.floor(Math.random() * ownedTiles.length)];
+            const t = randomTroopType();
+            updatedTiles = updatedTiles.map(tile => tile.id === target.id
+              ? { ...tile, troops: tile.troops + 1, garrison: addToComp(tile.garrison, t, 1) }
+              : tile);
+            blessLog.push(`${target.id}번→${TROOP_DATA[t].name}`);
+          }
+          newState = { ...newState, tiles: updatedTiles, log: [...newState.log, `종교인 스킬: 영토에 병사 3명 분배 (${blessLog.join(', ')})`] };
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
+    if (owner === 'player') {
+      newState = { ...newState, lapBonusAnim: { gold: LAP_GOLD_BONUS + lapIncome, troops: 0, tileProduction: totalTileProduction, tileBreakdown, tileDetails } };
+    }
+    newState = { ...newState, lapCount: newState.lapCount + 1 };
+
+    if (newState.dragonPending && newState.lapCount >= newState.dragonPending.summonAtLap && !newState.dragon) {
+      const spawnTile = newState.tiles
+        .filter(t => t.owner && t.owner !== 'neutral' && t.type === 'land' && t.owner !== owner)
+        .sort((a, b) => b.landPrice - a.landPrice)[0]
+        ?? newState.tiles.filter(t => t.type === 'land').sort((a, b) => b.landPrice - a.landPrice)[0];
+      if (spawnTile) {
+        newState = {
+          ...newState,
+          dragon: { position: spawnTile.id, troops: 30 },
+          dragonPending: null,
+          log: [...newState.log, `🐉 드래곤이 ${spawnTile.id}번 땅에 출현했다!`],
+        };
+      }
+    }
+  }
+
+  const passQueue: Array<{ tileId: number; troops: number; garrison: TroopComp }> = [];
+  for (const tileId of passedTileIds) {
+    const tile = newState.tiles.find(t => t.id === tileId);
+    if (tile && tile.owner === owner && tile.troops > 0) {
+      passQueue.push({ tileId, troops: tile.troops, garrison: { ...tile.garrison } });
+    }
+  }
+  if (owner !== 'player' && passQueue.length > 0) {
+    const totalCollected = passQueue.reduce((sum, q) => sum + q.troops, 0);
+    const maxTroops = CHARACTERS[piece.characterType].maxTroops;
+    const currentTroops = newState.pieces.find(p => p.id === piece.id)?.troops ?? 0;
+    const canCollect = Math.min(totalCollected, maxTroops - currentTroops);
+    if (canCollect > 0) {
+      let collectedComp: TroopComp = {};
+      for (const q of passQueue) collectedComp = mergeComp(collectedComp, q.garrison);
+      newState = {
+        ...newState,
+        pieces: newState.pieces.map(p => p.id === piece.id
+          ? { ...p, troops: p.troops + canCollect, composition: mergeComp(p.composition, scaleComp(collectedComp, canCollect)) }
+          : p),
+        tiles: newState.tiles.map(t =>
+          passedTileIds.has(t.id) && t.owner === owner && t.troops > 0
+            ? { ...t, troops: 0, garrison: {} }
+            : t),
+        log: [...newState.log, `이동 중 영토 통과 → ${canCollect}명 자동 징집`],
+      };
+    }
+  }
+
+  if (state.diceResult === 0 && piece.characterType === 'swindler') {
+    const ps2 = getPS(newState, owner);
+    newState = setPS({ ...newState, log: [...newState.log, '사기꾼 스킬: 주사위 0! 골드 +200'] }, owner, { gold: ps2.gold + 200 });
+  }
+
+  return handleTileLanding(newState, newPos, piece.id);
+}
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
 
@@ -365,160 +536,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'SELECT_PIECE': {
       const piece = state.pieces.find(p => p.id === action.pieceId);
       if (!piece) return state;
-      const dice = state.diceResult!;
-      const steps = dice;
+      const steps = state.diceResult!;
       const newPos = nextPosition(piece.position, steps);
-      const owner = state.currentTurn;
-      const passedStart = didPassStart(piece.position, steps, piece.startTileIndex);
-
-      let newState: GameState = {
-        ...state,
-        pieces: state.pieces.map(p => p.id === piece.id ? { ...p, position: newPos } : p),
-        selectedPieceId: piece.id,
-        log: [...state.log, `${getPS(state, owner).name} ${piece.id} → ${newPos}번 칸`],
-      };
-
-      if (passedStart) {
-        const lapIncome = state.tiles.filter(t => t.owner === owner).reduce((sum, t) => sum + getLapIncome(t), 0);
-        const ownerPS = getPS(newState, owner);
-        newState = setPS(newState, owner, { gold: ownerPS.gold + LAP_GOLD_BONUS + lapIncome });
-
-        // Per-land production (includes start tiles as premium land)
-        let totalTileProduction = 0;
-        const tileBreakdown: TroopComp = {};
-        const tileDetails: Array<{ tileId: number; amount: number; troopType: TroopType }> = [];
-        newState = {
-          ...newState,
-          tiles: newState.tiles.map(t => {
-            if (t.owner !== owner || (t.type !== 'land' && t.type !== 'start_p' && t.type !== 'start_e') || t.troops === 0) return t;
-            const produce = t.baseLapProduction + getLapTroops(t);
-            totalTileProduction += produce;
-            const dominant = dominantTroopType(t.garrison);
-            tileBreakdown[dominant] = (tileBreakdown[dominant] ?? 0) + produce;
-            tileDetails.push({ tileId: t.id, amount: produce, troopType: dominant });
-            return { ...t, troops: t.troops + produce, garrison: addToComp(t.garrison, dominant, produce) };
-          }),
-          log: [...newState.log, `출발점 통과! 골드 +${LAP_GOLD_BONUS + lapIncome}, 영토 병력 생산 +${totalTileProduction}`],
-        };
-
-        // Character lap skill
-        const lapPiece = newState.pieces.find(p => p.id === piece.id)!;
-        switch (lapPiece.characterType) {
-          case 'agitator': {
-            const t = randomTroopType();
-            newState = { ...newState,
-              pieces: newState.pieces.map(p => p.id === lapPiece.id
-                ? { ...p, troops: p.troops + 2, composition: addToComp(p.composition, t, 2) } : p),
-              log: [...newState.log, `선동가 스킬: ${TROOP_DATA[t].name} 2명 합류`] };
-            break;
-          }
-          case 'warlock': {
-            const enemies = newState.pieces.filter(p => p.owner !== owner && p.troops > 0);
-            if (enemies.length > 0) {
-              const target = enemies[Math.floor(Math.random() * enemies.length)];
-              const kill = Math.min(2, target.troops);
-              newState = { ...newState,
-                pieces: newState.pieces.map(p => p.id === target.id
-                  ? { ...p, troops: p.troops - kill, composition: removeFromComp(p.composition, kill) } : p),
-                log: [...newState.log, `흑마술사 스킬: ${getPS(newState, target.owner).name} 병력 ${kill}명 저주`] };
-            }
-            break;
-          }
-          case 'smuggler': {
-            const ps2 = getPS(newState, owner);
-            newState = setPS({ ...newState, log: [...newState.log, `밀수꾼 스킬: 골드 +200`] }, owner, { gold: ps2.gold + 200 });
-            break;
-          }
-          case 'cleric': {
-            const ownedTiles = newState.tiles.filter(t => t.owner === owner && (t.type === 'land' || t.type === 'start_p' || t.type === 'start_e'));
-            if (ownedTiles.length > 0) {
-              // Distribute 3 troops of random types across random owned tiles
-              const blessLog: string[] = [];
-              let updatedTiles = [...newState.tiles];
-              for (let i = 0; i < 3; i++) {
-                const tgt = ownedTiles[Math.floor(Math.random() * ownedTiles.length)];
-                const t = randomTroopType();
-                updatedTiles = updatedTiles.map(tile => tile.id === tgt.id
-                  ? { ...tile, troops: tile.troops + 1, garrison: addToComp(tile.garrison, t, 1) } : tile);
-                blessLog.push(`${tgt.id}번→${TROOP_DATA[t].name}`);
-              }
-              newState = { ...newState, tiles: updatedTiles,
-                log: [...newState.log, `종교인 스킬: 영토에 병사 3명 분배 (${blessLog.join(', ')})`] };
-            }
-            break;
-          }
-          default: break;
-        }
-
-        // Show lap bonus animation for player
-        if (owner === 'player') {
-          newState = { ...newState, lapBonusAnim: { gold: LAP_GOLD_BONUS + lapIncome, troops: 0, tileProduction: totalTileProduction, tileBreakdown, tileDetails } };
-        }
-        // Increment global lap count (raises tolls)
-        newState = { ...newState, lapCount: newState.lapCount + 1 };
-
-        // Dragon spawn check
-        if (newState.dragonPending && newState.lapCount >= newState.dragonPending.summonAtLap && !newState.dragon) {
-          const spawnTile = newState.tiles
-            .filter(t => t.owner && t.owner !== 'neutral' && t.type === 'land' && t.owner !== owner)
-            .sort((a, b) => b.landPrice - a.landPrice)[0]
-            ?? newState.tiles.filter(t => t.type === 'land').sort((a, b) => b.landPrice - a.landPrice)[0];
-          if (spawnTile) {
-            newState = {
-              ...newState,
-              dragon: { position: spawnTile.id, troops: 30 },
-              dragonPending: null,
-              log: [...newState.log, `🐉 드래곤이 ${spawnTile.id}번 땅에 출현했다!`],
-            };
-          }
-        }
-      }
-
-      // Collect info about owned tiles passed through (not the landing tile)
-      const prevPos = piece.position;
-      const passedTileIds: Set<number> = new Set();
-      for (let i = 1; i < steps; i++) passedTileIds.add(nextPosition(prevPos, i));
-      const ownedPassedIds: number[] = [];
-      const passQueue: Array<{ tileId: number; troops: number; garrison: TroopComp }> = [];
-      for (const tileId of passedTileIds) {
-        const t = newState.tiles.find(tile => tile.id === tileId);
-        if (t && t.owner === owner) {
-          ownedPassedIds.push(tileId);
-          if (t.troops > 0) passQueue.push({ tileId, troops: t.troops, garrison: { ...t.garrison } });
-        }
-      }
-      if (owner === 'player' && ownedPassedIds.length > 0) {
-        // Player: ask if they want to stop at a passed owned tile
-        return { ...newState, pendingStopTiles: ownedPassedIds.map(id => ({ tileId: id })), turnPhase: 'choose_stop' };
-      } else if (owner !== 'player' && passQueue.length > 0) {
-        // AI: auto-collect up to maxTroops
-        const totalCollected = passQueue.reduce((sum, q) => sum + q.troops, 0);
-        const maxTr = CHARACTERS[piece.characterType].maxTroops;
-        const canCollect = Math.min(totalCollected, maxTr - (newState.pieces.find(p => p.id === piece.id)?.troops ?? 0));
-        if (canCollect > 0) {
-          let collectedComp: TroopComp = {};
-          for (const q of passQueue) collectedComp = mergeComp(collectedComp, q.garrison);
-          newState = {
-            ...newState,
-            pieces: newState.pieces.map(p => p.id === piece.id
-              ? { ...p, troops: p.troops + canCollect, composition: mergeComp(p.composition, scaleComp(collectedComp, canCollect)) }
-              : p),
-            tiles: newState.tiles.map(t =>
-              passedTileIds.has(t.id) && t.owner === owner && t.troops > 0
-                ? { ...t, troops: 0, garrison: {} }
-                : t),
-            log: [...newState.log, `이동 중 영토 통과 → ${canCollect}명 자동 징집`],
-          };
-        }
-      }
-
-      // Swindler skill: dice = 0 → +200 gold
-      if (state.diceResult === 0 && piece.characterType === 'swindler') {
-        const ps2 = getPS(newState, owner);
-        newState = setPS({ ...newState, log: [...newState.log, `사기꾼 스킬: 주사위 0! 골드 +200`] }, owner, { gold: ps2.gold + 200 });
-      }
-
-      return handleTileLanding(newState, newPos, piece.id);
+      return resolvePieceMove(state, action.pieceId, newPos, steps, true);
     }
 
     case 'CHOOSE_FIGHT': {
@@ -614,13 +634,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'STOP_AT_TILE': {
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
-      const newPieces = state.pieces.map(p => p.id === piece.id ? { ...p, position: action.tileId } : p);
-      return handleTileLanding({ ...state, pendingStopTiles: null, pieces: newPieces }, action.tileId, piece.id);
+      const stepsToStop = (action.tileId - piece.position + state.tiles.length) % state.tiles.length;
+      return resolvePieceMove({ ...state, pendingStopTiles: null }, piece.id, action.tileId, stepsToStop, false);
     }
 
     case 'CONTINUE_MOVE': {
       const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
-      return handleTileLanding({ ...state, pendingStopTiles: null }, piece.position, piece.id);
+      const pendingStop = state.pendingStopTiles?.[0];
+      if (!pendingStop) return state;
+      return resolvePieceMove({ ...state, pendingStopTiles: null }, piece.id, pendingStop.finalTileId, pendingStop.steps, false);
     }
 
     case 'BATTLE_FINISH': {
@@ -800,7 +822,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         : t);
       const logMsg = isEmpty ? `${action.tileId}번 땅 구매 (기본 병력 ${EMPTY_LAND_INITIAL_TROOPS}명 배치)` : `${action.tileId}번 땅 구매`;
       return setPS(
-        { ...state, tiles: newTiles, activeTileAction: null, activeDeployTileId: null, turnPhase: 'end_turn' as const, log: [...state.log, logMsg] },
+        { ...state, tiles: newTiles, activeTileAction: null, activeDeployTileId: action.tileId, turnPhase: 'deploy' as const, log: [...state.log, logMsg] },
         owner, { gold: getPS(state, owner).gold - cost }
       );
     }

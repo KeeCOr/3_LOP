@@ -152,5 +152,5 @@ export interface GameState {
   lapCount: number;
   dragon: DragonState | null;
   dragonPending: { summonAtLap: number } | null;
-  pendingStopTiles: Array<{ tileId: number }> | null;
+  pendingStopTiles: Array<{ tileId: number; finalTileId: number; steps: number }> | null;
 }
