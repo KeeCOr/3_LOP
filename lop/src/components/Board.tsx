@@ -6,6 +6,7 @@ import { TILE_DEFINITIONS, TOTAL_TILES } from '@/lib/boardLayout';
 import { FACTION_COLORS } from '@/lib/factionColors';
 import { CHARACTERS, TROOP_DATA } from '@/lib/gameData';
 import { getToll } from '@/lib/economyUtils';
+import { getTurnActionInfo } from '@/lib/turnActionInfo.mjs';
 import BoardTile from './BoardTile';
 import HUD from './HUD';
 import DiceRoller from './DiceRoller';
@@ -36,6 +37,52 @@ function getCurrentPlayerName(state: GameState): string {
   return state.ai3?.name ?? 'AI 3';
 }
 
+function CenterTurnSummary({ state, isAnimating }: { state: GameState; isAnimating: boolean }) {
+  const info = getTurnActionInfo(state, isAnimating);
+  const fc = FACTION_COLORS[state.currentTurn];
+  const currentPiece = state.selectedPieceId
+    ? state.pieces.find(piece => piece.id === state.selectedPieceId)
+    : null;
+  const latestLog = state.log.length > 0 ? state.log[state.log.length - 1] : '게임을 시작했습니다.';
+
+  return (
+    <section
+      style={{ gridRow: '2 / span 2', gridColumn: '2 / span 3' }}
+      className={`relative z-0 m-1 hidden min-h-0 flex-col justify-between rounded-lg border bg-gray-950/80 p-4 shadow-inner backdrop-blur-sm lg:flex ${fc.border}`}>
+      <div>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <span className={`rounded border px-2 py-1 text-[11px] font-black ${fc.border} ${fc.bg} ${fc.textBright}`}>
+            {info.step}
+          </span>
+          <span className="text-[11px] font-bold text-gray-400">Lap {state.lapCount}</span>
+        </div>
+        <div className={`text-[11px] font-bold ${fc.text}`}>{getCurrentPlayerName(state)} 턴</div>
+        <h3 className="mt-1 text-base font-black leading-tight text-white">{info.title}</h3>
+        <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-300">{info.description}</p>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="rounded bg-black/35 px-2 py-2">
+          <div className="text-[10px] text-gray-500">주사위</div>
+          <div className="font-black text-yellow-200">{state.diceResult ?? '-'}</div>
+        </div>
+        <div className="rounded bg-black/35 px-2 py-2">
+          <div className="text-[10px] text-gray-500">선택 말</div>
+          <div className="truncate font-black text-white">{currentPiece ? `${currentPiece.troops}명` : '-'}</div>
+        </div>
+        <div className="rounded bg-black/35 px-2 py-2">
+          <div className="text-[10px] text-gray-500">보유 골드</div>
+          <div className="font-black text-yellow-300">{state.player.gold}G</div>
+        </div>
+      </div>
+
+      <div className="mt-3 truncate border-t border-gray-800 pt-2 text-[11px] text-gray-400">
+        {latestLog}
+      </div>
+    </section>
+  );
+}
+
 
 let _goldAnimId = 0;
 
@@ -64,6 +111,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
 
   const isChoosingTile = state.turnPhase === 'choose_move_tile' && isPlayerTurn;
   const isForcedSelling = state.turnPhase === 'forced_sell' && isPlayerTurn;
+  const isSelectingPiece = state.turnPhase === 'select_piece' && isPlayerTurn && pieceSelectorReady;
 
   // Forced sell info
   const forcedSellLandTile = isForcedSelling && state.activeTileAction !== null
@@ -247,13 +295,23 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
               gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
               gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
             }}>
+            <CenterTurnSummary state={state} isAnimating={isAnimating} />
             {TILE_DEFINITIONS.map(def => {
               const tile = state.tiles.find(t => t.id === def.index)!;
+              const hasSelectablePiece = isSelectingPiece && displayPieces.some(piece =>
+                piece.owner === 'player' && piece.troops > 0 && piece.position === def.index
+              );
+              const isActionCandidate =
+                hasSelectablePiece ||
+                (isChoosingTile && tile.type === 'land') ||
+                (isForcedSelling && tile.owner === 'player' && tile.type === 'land');
               return (
                 <BoardTile key={def.index} tile={tile} pieces={displayPieces}
                   isActive={isChoosingTile || isForcedSelling ? false : def.index === activeTileId}
                   isMoving={def.index === movingTileId}
                   isSelectable={isForcedSelling && tile.owner === 'player' && tile.type === 'land'}
+                  isActionCandidate={isActionCandidate}
+                  isDimmed={(isSelectingPiece || isChoosingTile || isForcedSelling) && !isActionCandidate}
                   isInfoOpen={infoTileId === def.index}
                   lapCount={state.lapCount}
                   dragon={state.dragon}

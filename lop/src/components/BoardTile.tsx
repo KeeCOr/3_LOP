@@ -44,6 +44,8 @@ interface Props {
   isActive: boolean;
   isMoving?: boolean;
   isSelectable?: boolean;
+  isActionCandidate?: boolean;
+  isDimmed?: boolean;
   isInfoOpen?: boolean;
   lapCount?: number;
   dragon?: DragonState | null;
@@ -51,7 +53,7 @@ interface Props {
   onPieceClick?: (pieceId: string) => void;
 }
 
-export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectable, isInfoOpen, lapCount = 0, dragon, onClick, onPieceClick }: Props) {
+export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectable, isActionCandidate, isDimmed, isInfoOpen, lapCount = 0, dragon, onClick, onPieceClick }: Props) {
   const def = TILE_DEFINITIONS.find(d => d.index === tile.id)!;
   const piecesHere = pieces.filter(p => p.position === tile.id);
   const isLand = CAPTURABLE_TYPES.has(tile.type);
@@ -79,7 +81,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
     <div
       onClick={onClick}
       style={{ gridRow: def.gridRow, gridColumn: def.gridCol, zIndex: piecesHere.length > 0 ? 10 : undefined }}
-      className="relative cursor-pointer">
+      className={`relative cursor-pointer transition-opacity ${isDimmed ? 'opacity-45' : 'opacity-100'}`}>
 
       {/* Main tile — Monopoly-style layout */}
       <div className={`h-full flex flex-col rounded-lg overflow-hidden transition-all
@@ -91,7 +93,14 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
         ${isActive     ? 'ring-2 ring-yellow-400 brightness-125 scale-[1.03]' : ''}
         ${isMoving     ? 'ring-2 ring-white brightness-150 scale-[1.03]' : ''}
         ${isSelectable ? 'ring-2 ring-green-400 brightness-125 animate-pulse' : ''}
-        ${!isActive && !isMoving && !isSelectable ? 'hover:brightness-110' : ''}`}>
+        ${isActionCandidate ? 'ring-2 ring-cyan-300 brightness-125 shadow-[0_0_18px_rgba(103,232,249,0.28)]' : ''}
+        ${!isActive && !isMoving && !isSelectable && !isActionCandidate ? 'hover:brightness-110' : ''}`}>
+
+        {isActionCandidate && (
+          <div className="absolute left-1 top-1 z-20 rounded bg-cyan-400 px-1.5 py-0.5 text-[9px] font-black leading-none text-gray-950 shadow">
+            선택
+          </div>
+        )}
 
         {/* TOP STRIP — Monopoly owner color band (land only) */}
         {isLand && (
