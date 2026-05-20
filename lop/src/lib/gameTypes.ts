@@ -73,6 +73,7 @@ export interface BattleState {
   rounds: BattleRound[];
   result: 'ongoing' | 'attacker_wins' | 'defender_wins';
   isDragonBattle?: boolean;
+  defenderTileJoined?: boolean;
 }
 
 export type CardEffectType =

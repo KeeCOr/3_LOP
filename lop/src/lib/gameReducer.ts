@@ -215,7 +215,7 @@ export type GameAction =
   | { type: 'DEPLOY_TROOPS'; tileId: number; garrison: TroopComp }
   | { type: 'BUILD'; tileId: number; buildingType: BuildingType }
   | { type: 'SKIP_BUILD' }
-  | { type: 'BUY_TROOPS'; pieceId: string; troopType: TroopType; amount: number; tileId?: number }
+  | { type: 'BUY_TROOPS'; pieceId: string; troopType: TroopType; amount: number }
   | { type: 'BUY_PIECE'; characterType: CharacterType }
   | { type: 'OPEN_SHOP' }
   | { type: 'CLOSE_SHOP' }
@@ -229,23 +229,40 @@ export type GameAction =
   | { type: 'CONTINUE_MOVE' }
   | { type: 'END_TURN' };
 
+function getDefeatedPiecePosition(state: GameState, owner: PlayerType, currentPosition: number, excludedTileId?: number): number {
+  const ownedTiles = state.tiles.filter(t => t.owner === owner && t.id !== excludedTileId);
+  return ownedTiles.length === 0
+    ? currentPosition
+    : ownedTiles[Math.floor(Math.random() * ownedTiles.length)].id;
+}
+
+function getEnemyPieceOnTile(state: GameState, tileId: number, owner: PlayerType, currentPieceId?: string): Piece | undefined {
+  return state.pieces.find(p =>
+    p.position === tileId &&
+    p.owner !== owner &&
+    p.troops > 0 &&
+    p.id !== currentPieceId
+  );
+}
+
 // Extracted battle setup helper
 function executeBattle(state: GameState, tileId: number): GameState {
   const piece = state.pieces.find(p => p.id === state.selectedPieceId)!;
   const tile = state.tiles.find(t => t.id === tileId)!;
   const owner = state.currentTurn;
-  const defenderOwnerRaw = tile.owner;
-  const defenderOwner = (defenderOwnerRaw && defenderOwnerRaw !== 'neutral') ? defenderOwnerRaw as PlayerType : null;
-
-  const defendingPiece = defenderOwner
-    ? state.pieces.find(p => p.owner === defenderOwner && p.position === tile.id && p.troops > 0 && p.id !== piece.id)
-    : undefined;
-
-  const combinedDefTroops = tile.troops + (defendingPiece?.troops ?? 0);
-  const combinedGarrison = defendingPiece ? mergeComp(tile.garrison, defendingPiece.composition) : tile.garrison;
+  const defendingPiece = getEnemyPieceOnTile(state, tile.id, owner, piece.id);
+  const tileOwner = tile.owner && tile.owner !== 'neutral' ? tile.owner as PlayerType : null;
+  const defenderTileJoined = !!tileOwner && tileOwner !== owner && (!defendingPiece || tileOwner === defendingPiece.owner);
+  const tileTroopsInBattle = defenderTileJoined ? tile.troops : 0;
+  const pieceTroopsInBattle = defendingPiece?.troops ?? 0;
+  const combinedDefTroops = tileTroopsInBattle + pieceTroopsInBattle;
+  const combinedGarrison = defendingPiece
+    ? (defenderTileJoined ? mergeComp(tile.garrison, defendingPiece.composition) : defendingPiece.composition)
+    : tile.garrison;
 
   const atkBoost = getPS(state, owner).attackBoostActive ? 1.5 : 1;
-  const defBoostMult = defenderOwner === 'player' ? state.player.defenseBoostMultiplier : 1;
+  const defenseOwner = defenderTileJoined ? tileOwner : defendingPiece?.owner;
+  const defBoostMult = defenseOwner === 'player' ? state.player.defenseBoostMultiplier : 1;
 
   const setup: BattleState = {
     attackerPieceId: piece.id,
@@ -260,6 +277,7 @@ function executeBattle(state: GameState, tileId: number): GameState {
     defenderDefense: getGarrisonDefense(combinedGarrison, combinedDefTroops, getBuildingDefenseBonus(tile)) * defBoostMult,
     rounds: [],
     result: 'ongoing' as const,
+    defenderTileJoined,
   };
   const finished = runFullBattle(setup);
   const logExtra = defendingPiece ? ` (합산 방어 ${combinedDefTroops}명)` : '';
@@ -679,8 +697,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           return victoryState;
         } else {
           // Dragon wins — attacker retreats, dragon troops updated
+          const defeatedPosition = getDefeatedPiecePosition(stateAfterBattle, attackerPiece.owner, attackerPiece.position);
           const newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
-            ? { ...p, troops: 0, composition: {}, position: attackerPiece.startTileIndex }
+            ? { ...p, troops: 0, composition: {}, position: defeatedPosition }
             : p);
           return {
             ...stateAfterBattle,
@@ -699,11 +718,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ? { ...p, troops: battle.attackerTroops, composition: scaledComp }
           : p);
         if (defendingPiece) {
+          const defeatedPosition = getDefeatedPiecePosition(stateAfterBattle, defendingPiece.owner, defendingPiece.position, battle.defenderTileId);
           newPieces = newPieces.map(p => p.id === defendingPiece.id
-            ? { ...p, troops: 0, composition: {}, position: defendingPiece.startTileIndex }
+            ? { ...p, troops: 0, composition: {}, position: defeatedPosition }
             : p);
         }
         const capturedPiece = !!defendingPiece && battle.defenderTroopsFromPiece > 0;
+        if (defendingPiece && !battle.defenderTileJoined) {
+          return {
+            ...stateAfterBattle,
+            activeBattle: null,
+            pieces: newPieces,
+            bonusRoll: state.bonusRoll || capturedPiece,
+            turnPhase: 'end_turn' as const,
+            log: [...stateAfterBattle.log, `${getPS(state, owner).name} 말 전투 승리! ${defendingPiece.id} 후퇴`],
+          };
+        }
         // Auto-deploy base troops on capture, player can add more in deploy phase
         const baseGarrison: TroopComp = { swordsman: CAPTURE_BASE_TROOPS };
         const tilesWithBase = stateAfterBattle.tiles.map(t =>
@@ -746,9 +776,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const penalty = getToll(defenderTile, tollDouble, state.lapCount);
 
         let newTiles = stateAfterBattle.tiles;
+        const attackerDefeatPosition = getDefeatedPiecePosition(stateAfterBattle, attackerPiece.owner, attackerPiece.position);
         let newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
-          ? { ...p, troops: 0, composition: {}, position: attackerPiece.startTileIndex }
+          ? { ...p, troops: 0, composition: {}, position: attackerDefeatPosition }
           : p);
+
+        if (defendingPiece && !battle.defenderTileJoined) {
+          newPieces = newPieces.map(p => p.id === defendingPiece.id
+            ? { ...p, troops: defenderRemaining, composition: scaleComp(p.composition, defenderRemaining) }
+            : p);
+          return {
+            ...stateAfterBattle,
+            activeBattle: null,
+            pieces: newPieces,
+            turnPhase: 'end_turn' as const,
+            log: [...stateAfterBattle.log, `${getPS(state, owner).name} 말 전투 패배. ${attackerPiece.id} 후퇴`],
+          };
+        }
 
         if (defendingPiece && battle.defenderTroopsFromPiece > 0 && initialDefTotal > 0) {
           const pieceShare = Math.round(defenderRemaining * (battle.defenderTroopsFromPiece / initialDefTotal));
@@ -960,20 +1004,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const troopData = TROOP_DATA[action.troopType];
       const priceScale = 1 + ownerPS.troopBuyCount * TROOP_PRICE_SCALE;
       const unitCost = Math.ceil(troopData.price * priceScale);
-      if (action.tileId !== undefined) {
-        // Deploy directly to tile garrison
-        const canBuy = Math.min(action.amount, Math.floor(ownerPS.gold / unitCost));
-        if (canBuy <= 0) return state;
-        return setPS(
-          {
-            ...state,
-            tiles: state.tiles.map(t => t.id === action.tileId
-              ? { ...t, troops: t.troops + canBuy, garrison: addToComp(t.garrison, action.troopType, canBuy) }
-              : t),
-          },
-          owner, { gold: ownerPS.gold - canBuy * unitCost, troopBuyCount: ownerPS.troopBuyCount + 1 }
-        );
-      }
       const maxTroops = CHARACTERS[piece.characterType].maxTroops;
       const canBuy = Math.min(action.amount, Math.floor(ownerPS.gold / unitCost), maxTroops - piece.troops);
       if (canBuy <= 0) return state;
@@ -1111,6 +1141,11 @@ function handleTileLanding(state: GameState, tileId: number, _pieceId: string): 
   // Dragon encounter — takes priority over normal tile logic
   if (state.dragon && state.dragon.position === tileId && state.dragon.troops > 0) {
     return executeDragonBattle(state);
+  }
+
+  const enemyPiece = getEnemyPieceOnTile(state, tileId, owner, _pieceId);
+  if (enemyPiece && tile.owner !== enemyPiece.owner) {
+    return executeBattle(state, tileId);
   }
 
   if (tile.type === 'start_p' || tile.type === 'start_e') {
