@@ -30,6 +30,9 @@ interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 interface AnimState { pieceId: string; path: number[]; step: number; }
 interface GoldAnim { id: number; amount: number; }
 
+const boardGameFrame = 'rounded-md border border-amber-700/70 bg-gradient-to-br from-[#16351f]/95 via-[#0d2532]/95 to-[#1c2212]/95 p-2 shadow-[inset_0_0_0_1px_rgba(255,240,180,0.12),0_14px_38px_rgba(0,0,0,0.48)]';
+const boardCenterPanel = 'relative z-0 m-1 hidden min-h-0 flex-col justify-between rounded-md border border-amber-600/70 bg-[#06141d]/88 p-4 shadow-[inset_0_0_0_1px_rgba(255,244,190,0.14),0_0_26px_rgba(0,0,0,0.35)] backdrop-blur-sm lg:flex';
+
 function getCurrentPlayerName(state: GameState): string {
   if (state.currentTurn === 'player') return '플레이어';
   if (state.currentTurn === 'ai') return state.ai.name;
@@ -48,35 +51,35 @@ function CenterTurnSummary({ state, isAnimating }: { state: GameState; isAnimati
   return (
     <section
       style={{ gridRow: '2 / span 2', gridColumn: '2 / span 3' }}
-      className={`relative z-0 m-1 hidden min-h-0 flex-col justify-between rounded-lg border bg-gray-950/80 p-4 shadow-inner backdrop-blur-sm lg:flex ${fc.border}`}>
+      className={`${boardCenterPanel} ${fc.border}`}>
       <div>
         <div className="mb-2 flex items-center justify-between gap-2">
-          <span className={`rounded border px-2 py-1 text-[11px] font-black ${fc.border} ${fc.bg} ${fc.textBright}`}>
+          <span className={`rounded-sm border px-2 py-1 text-[11px] font-black ${fc.border} ${fc.bg} ${fc.textBright}`}>
             {info.step}
           </span>
-          <span className="text-[11px] font-bold text-gray-400">Lap {state.lapCount}</span>
+          <span className="text-[11px] font-bold text-amber-300/80">Lap {state.lapCount}</span>
         </div>
         <div className={`text-[11px] font-bold ${fc.text}`}>{getCurrentPlayerName(state)} 턴</div>
-        <h3 className="mt-1 text-base font-black leading-tight text-white">{info.title}</h3>
-        <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-300">{info.description}</p>
+        <h3 className="mt-1 text-lg font-black leading-tight text-amber-50 [text-shadow:0_2px_0_rgba(0,0,0,0.6)]">{info.title}</h3>
+        <p className="mt-1 line-clamp-2 text-xs leading-snug text-slate-200">{info.description}</p>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="rounded bg-black/35 px-2 py-2">
-          <div className="text-[10px] text-gray-500">주사위</div>
+        <div className="rounded-sm border border-amber-900/60 bg-black/35 px-2 py-2">
+          <div className="text-[10px] text-amber-500/80">주사위</div>
           <div className="font-black text-yellow-200">{state.diceResult ?? '-'}</div>
         </div>
-        <div className="rounded bg-black/35 px-2 py-2">
-          <div className="text-[10px] text-gray-500">선택 말</div>
+        <div className="rounded-sm border border-amber-900/60 bg-black/35 px-2 py-2">
+          <div className="text-[10px] text-amber-500/80">선택 말</div>
           <div className="truncate font-black text-white">{currentPiece ? `${currentPiece.troops}명` : '-'}</div>
         </div>
-        <div className="rounded bg-black/35 px-2 py-2">
-          <div className="text-[10px] text-gray-500">보유 골드</div>
+        <div className="rounded-sm border border-amber-900/60 bg-black/35 px-2 py-2">
+          <div className="text-[10px] text-amber-500/80">보유 골드</div>
           <div className="font-black text-yellow-300">{state.player.gold}G</div>
         </div>
       </div>
 
-      <div className="mt-3 truncate border-t border-gray-800 pt-2 text-[11px] text-gray-400">
+      <div className="mt-3 truncate border-t border-amber-900/50 pt-2 text-[11px] text-slate-400">
         {latestLog}
       </div>
     </section>
@@ -264,7 +267,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
     }
   }
   return (
-    <div className="h-screen bg-gray-950 text-white flex flex-col overflow-hidden"
+    <div className="h-screen bg-[#02070c] text-white flex flex-col overflow-hidden"
       onClick={() => setInfoTileId(null)}>
       {/* HUD */}
       <div className="flex-none">
@@ -272,7 +275,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
       </div>
 
       {/* Board + persistent tile panel */}
-      <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-2 px-2 py-2 ${isChoosingTile || isForcedSelling ? 'cursor-crosshair' : ''}`}
+      <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-2 px-2 py-2 bg-[radial-gradient(circle_at_center,rgba(42,95,76,0.32),rgba(2,7,12,0.92)_72%)] ${isChoosingTile || isForcedSelling ? 'cursor-crosshair' : ''}`}
         onClick={e => e.stopPropagation()}>
         <div className="flex min-h-0 flex-col">
           {(isChoosingTile || isForcedSelling) && (
@@ -290,7 +293,7 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
               드래곤 출현 중 ({state.dragon.troops}명 / {state.dragon.position}번 타일)
             </div>
           )}
-          <div className="grid gap-1 flex-1 min-h-0"
+          <div className={`grid flex-1 min-h-0 gap-1.5 ${boardGameFrame}`}
             style={{
               gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
               gridTemplateRows: 'repeat(4, minmax(0, 1fr))',

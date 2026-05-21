@@ -16,6 +16,7 @@ const BUILDING_IMG: Partial<Record<BuildingType, string[]>> = {
 
 const CAPTURABLE_TYPES = new Set(['land']);
 const HOME_TYPES = new Set(['start_p', 'start_e']);
+const stoneTileFrame = 'rounded-md border-[3px] shadow-[inset_0_0_0_1px_rgba(255,245,190,0.14),inset_0_-18px_34px_rgba(0,0,0,0.24),0_5px_10px_rgba(0,0,0,0.34)]';
 
 function ownerBgStyle(owner: Tile['owner']): string {
   if (!owner || owner === 'neutral') return 'bg-gray-950';
@@ -84,12 +85,12 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
       className={`relative cursor-pointer transition-opacity ${isDimmed ? 'opacity-45' : 'opacity-100'}`}>
 
       {/* Main tile — Monopoly-style layout */}
-      <div className={`h-full flex flex-col rounded-lg overflow-hidden transition-all
+      <div className={`h-full flex flex-col overflow-hidden transition-all ${stoneTileFrame}
         ${isHome
-          ? `border-4 ${homeStyle(tile.owner)}`
+          ? `${homeStyle(tile.owner)}`
           : isLand
-          ? `border-2 ${ownerBorderStyle(tile.owner)} ${ownerBgStyle(tile.owner)}`
-          : 'border-2 border-gray-700 bg-gray-900/60'}
+          ? `${ownerBorderStyle(tile.owner)} ${ownerBgStyle(tile.owner)}`
+          : 'border-gray-700 bg-gray-900/60'}
         ${isActive     ? 'ring-2 ring-yellow-400 brightness-125 scale-[1.03]' : ''}
         ${isMoving     ? 'ring-2 ring-white brightness-150 scale-[1.03]' : ''}
         ${isSelectable ? 'ring-2 ring-green-400 brightness-125 animate-pulse' : ''}
@@ -106,8 +107,8 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
         {isLand && (
           <div className={`flex-none flex items-center justify-center py-1
             ${isOwnedLand
-              ? FACTION_COLORS[tile.owner as PlayerType].badge
-              : 'bg-gray-700/60'}`}>
+              ? `${FACTION_COLORS[tile.owner as PlayerType].badge} shadow-[inset_0_-10px_16px_rgba(0,0,0,0.18)]`
+              : 'bg-stone-700/70'}`}>
             {isOwnedLand ? (
               <span className="text-[9px] font-black text-white/90 tracking-tight uppercase">
                 {FACTION_NAMES[tile.owner as PlayerType]}
@@ -124,7 +125,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
         )}
 
         {/* CENTER — tile name only (details in popup) */}
-        <div className="flex-1 flex flex-col items-center justify-center p-0.5 min-h-0">
+        <div className="flex-1 flex flex-col items-center justify-center p-1 min-h-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_58%)]">
 
           {/* Buildings — images above tile name */}
           {(Object.entries(tile.buildings ?? {}) as [BuildingType, number][])
@@ -144,15 +145,15 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
             </div>
           )}
 
-          <div className={`text-[11px] text-center leading-tight
-            ${isHome ? 'font-bold text-white' : isLand ? 'text-gray-200 font-medium' : 'text-gray-400'}`}>
+          <div className={`text-[11px] text-center leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]
+            ${isHome ? 'font-bold text-white' : isLand ? 'text-gray-100 font-bold' : 'text-gray-300'}`}>
             {def.label}
           </div>
 
           {/* Troop count + composition */}
           {tile.troops > 0 && (
             <div className="flex flex-col items-center gap-[1px] mt-0.5">
-              <div className={`text-[11px] font-bold leading-none ${troopTextStyle(tile.owner)}`}>
+              <div className={`text-lg font-black leading-none text-white [text-shadow:0_2px_3px_rgba(0,0,0,0.9)] ${troopTextStyle(tile.owner)}`}>
                 {tile.troops}명
               </div>
               <div className="flex flex-wrap justify-center gap-x-[3px]">
@@ -170,7 +171,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
 
         {/* BOTTOM STRIP — Monopoly style: toll (owned) or purchase price (unowned) */}
         {isLand && (
-          <div className="flex-none bg-black/50 flex flex-col items-center justify-center py-1.5">
+          <div className="flex-none border-t border-black/45 bg-black/55 flex flex-col items-center justify-center py-1.5">
             {isOwnedLand ? (
               <>
                 <span className="text-[8px] text-orange-300/70 leading-none uppercase tracking-wide">통행세</span>

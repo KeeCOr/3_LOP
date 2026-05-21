@@ -5,6 +5,8 @@ import { FACTION_COLORS, FACTION_NAMES } from '@/lib/factionColors';
 import { getLapIncome, getLapTroops, getToll } from '@/lib/economyUtils';
 
 const BUILDING_ORDER: BuildingType[] = ['vault', 'barracks', 'fort', 'toll_gate'];
+const detailPanelFrame = 'rounded-md border border-amber-700/70 bg-[#06141d]/94 p-3 shadow-[inset_0_0_0_1px_rgba(255,244,190,0.12),0_14px_32px_rgba(0,0,0,0.46)] lg:h-full lg:overflow-y-auto';
+const detailSectionFrame = 'rounded-md border border-amber-900/45 bg-black/22 p-2.5';
 
 function ownerLabel(owner: Tile['owner']): string {
   if (!owner || owner === 'neutral') return '중립';
@@ -24,8 +26,8 @@ function InfoRow({ label, value, tone = 'text-white' }: { label: string; value: 
 export default function TileDetailPanel({ state, tile }: { state: GameState; tile: Tile | null }) {
   if (!tile) {
     return (
-      <aside className="flex min-h-[160px] flex-col justify-center rounded border border-gray-800 bg-gray-950/85 p-4 text-sm text-gray-400 lg:h-full">
-        <div className="text-base font-black text-white">타일 정보</div>
+      <aside className={`${detailPanelFrame} flex min-h-[160px] flex-col justify-center text-sm text-slate-400`}>
+        <div className="text-base font-black text-amber-100">타일 정보</div>
         <p className="mt-2 text-xs leading-relaxed">보드의 타일을 선택하면 소유, 통행료, 병력, 건물 정보를 여기에서 계속 확인할 수 있습니다.</p>
       </aside>
     );
@@ -45,18 +47,18 @@ export default function TileDetailPanel({ state, tile }: { state: GameState; til
     .filter(([, level]) => level > 0);
 
   return (
-    <aside className="rounded border border-gray-800 bg-gray-950/90 p-3 shadow-2xl lg:h-full lg:overflow-y-auto">
-      <div className="flex items-start justify-between gap-2 border-b border-gray-800 pb-2">
+    <aside className={detailPanelFrame}>
+      <div className="flex items-start justify-between gap-2 border-b border-amber-900/55 pb-2">
         <div className="min-w-0">
-          <div className="text-[11px] font-bold uppercase tracking-wide text-gray-500">선택 타일</div>
-          <h2 className="truncate text-lg font-black text-white">{def?.label ?? `타일 ${tile.id}`}</h2>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-amber-500/80">선택한 영토</div>
+          <h2 className="truncate text-xl font-black text-amber-50 [text-shadow:0_2px_0_rgba(0,0,0,0.55)]">{def?.label ?? `타일 ${tile.id}`}</h2>
         </div>
-        <span className={`rounded px-2 py-1 text-[11px] font-black ${ownerColor ? ownerColor.badge : 'bg-gray-800 text-gray-300'}`}>
+        <span className={`rounded-sm border border-white/15 px-2 py-1 text-[11px] font-black ${ownerColor ? ownerColor.badge : 'bg-gray-800 text-gray-300'}`}>
           {ownerLabel(tile.owner)}
         </span>
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className={`mt-3 space-y-2 ${detailSectionFrame}`}>
         {isLandLike && (
           <>
             <InfoRow label={isOwned ? '통행료' : '구매가'} value={`${isOwned ? toll : tile.landPrice}G`} tone={isOwned ? 'text-orange-300' : 'text-yellow-300'} />
@@ -69,12 +71,12 @@ export default function TileDetailPanel({ state, tile }: { state: GameState; til
         <InfoRow label="주둔 병력" value={`${tile.troops}명`} />
       </div>
 
-      <section className="mt-4 border-t border-gray-800 pt-3">
-        <h3 className="text-[11px] font-black uppercase tracking-wide text-gray-500">병력 구성</h3>
+      <section className={`mt-3 ${detailSectionFrame}`}>
+        <h3 className="text-[11px] font-black uppercase tracking-wide text-amber-500/80">병력 구성</h3>
         {garrison.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {garrison.map(([type, amount]) => (
-              <span key={type} className="rounded bg-gray-900 px-2 py-1 text-[11px] font-bold text-gray-200">
+              <span key={type} className="rounded-sm border border-slate-700 bg-gray-900 px-2 py-1 text-[11px] font-bold text-gray-200">
                 {TROOP_DATA[type].emoji} {TROOP_DATA[type].name} {amount}
               </span>
             ))}
@@ -84,12 +86,12 @@ export default function TileDetailPanel({ state, tile }: { state: GameState; til
         )}
       </section>
 
-      <section className="mt-4 border-t border-gray-800 pt-3">
-        <h3 className="text-[11px] font-black uppercase tracking-wide text-gray-500">건물</h3>
+      <section className={`mt-3 ${detailSectionFrame}`}>
+        <h3 className="text-[11px] font-black uppercase tracking-wide text-amber-500/80">건물</h3>
         {buildings.length > 0 ? (
           <div className="mt-2 space-y-1.5">
             {buildings.map(([type, level]) => (
-              <div key={type} className="rounded bg-gray-900 px-2 py-1.5">
+              <div key={type} className="rounded-sm border border-slate-700 bg-gray-900 px-2 py-1.5">
                 <div className="flex justify-between gap-2 text-xs">
                   <span className="font-bold text-purple-200">{BUILDING_DATA[type].name[level - 1]}</span>
                   <span className="text-gray-400">Lv.{level}</span>
@@ -103,7 +105,7 @@ export default function TileDetailPanel({ state, tile }: { state: GameState; til
         )}
       </section>
 
-      <section className="mt-4 rounded border border-gray-800 bg-black/20 p-2">
+      <section className="mt-3 rounded-md border border-amber-700/55 bg-amber-950/18 p-2.5">
         <div className="text-[11px] font-black text-yellow-300">추천 확인</div>
         <p className="mt-1 text-xs leading-relaxed text-gray-300">
           {tile.owner === 'player'

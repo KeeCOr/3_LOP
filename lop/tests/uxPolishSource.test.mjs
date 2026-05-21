@@ -28,3 +28,17 @@ test('BoardTile supports actionable candidate and dimmed states', async () => {
   assert.match(source, /ring-cyan-300/);
   assert.match(source, /opacity-45/);
 });
+
+test('reference-inspired layout uses premium board game panels', async () => {
+  const hud = await readFile(new URL('../src/components/HUD.tsx', import.meta.url), 'utf8');
+  const board = await readFile(new URL('../src/components/Board.tsx', import.meta.url), 'utf8');
+  const panel = await readFile(new URL('../src/components/TileDetailPanel.tsx', import.meta.url), 'utf8');
+  const actionBar = await readFile(new URL('../src/components/TurnActionBar.tsx', import.meta.url), 'utf8');
+  const tile = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
+
+  assert.match(hud, /hudStatCard/);
+  assert.match(board, /boardGameFrame/);
+  assert.match(panel, /detailPanelFrame/);
+  assert.match(actionBar, /phaseFlowStep/);
+  assert.match(tile, /stoneTileFrame/);
+});
