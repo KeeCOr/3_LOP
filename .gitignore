@@ -1,1 +1,5 @@
 releases/
+*.exe
+release/win-unpacked/
+electron/node_modules/
+node_modules/
