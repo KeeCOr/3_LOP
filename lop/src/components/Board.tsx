@@ -32,6 +32,7 @@ interface GoldAnim { id: number; amount: number; }
 
 const boardGameFrame = 'rounded-md border border-amber-700/70 bg-gradient-to-br from-[#16351f]/95 via-[#0d2532]/95 to-[#1c2212]/95 p-2 shadow-[inset_0_0_0_1px_rgba(255,240,180,0.12),0_14px_38px_rgba(0,0,0,0.48)]';
 const boardCenterPanel = 'relative z-0 m-1 hidden min-h-0 flex-col justify-between rounded-md border border-amber-600/70 bg-[#06141d]/88 p-4 shadow-[inset_0_0_0_1px_rgba(255,244,190,0.14),0_0_26px_rgba(0,0,0,0.35)] backdrop-blur-sm lg:flex';
+const boardMapBackground = "url('/generated/lop-board-map-bg.png')";
 
 function getCurrentPlayerName(state: GameState): string {
   if (state.currentTurn === 'player') return '플레이어';
@@ -275,7 +276,10 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
       </div>
 
       {/* Board + persistent tile panel */}
-      <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-2 px-2 py-2 bg-[radial-gradient(circle_at_center,rgba(42,95,76,0.32),rgba(2,7,12,0.92)_72%)] ${isChoosingTile || isForcedSelling ? 'cursor-crosshair' : ''}`}
+      <div className={`flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-2 px-2 py-2 bg-cover bg-center ${isChoosingTile || isForcedSelling ? 'cursor-crosshair' : ''}`}
+        style={{
+          backgroundImage: `linear-gradient(180deg, rgba(2,7,12,0.72), rgba(2,7,12,0.88)), radial-gradient(circle at center, rgba(42,95,76,0.26), rgba(2,7,12,0.82) 72%), ${boardMapBackground}`,
+        }}
         onClick={e => e.stopPropagation()}>
         <div className="flex min-h-0 flex-col">
           {(isChoosingTile || isForcedSelling) && (

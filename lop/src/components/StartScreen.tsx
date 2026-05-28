@@ -4,7 +4,8 @@ import type { CharacterType, Difficulty } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
 import { CHAR_IMAGE } from '@/lib/charImages';
 
-const VERSION = '0.4.8';
+const VERSION = '0.4.9';
+const startHeroBackground = "url('/generated/lop-start-hero-bg.png')";
 
 interface Props { onStart: (char: CharacterType, diff: Difficulty, playerCount: 2 | 3 | 4) => void; }
 
@@ -50,7 +51,11 @@ export default function StartScreen({ onStart }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#17213a,#05070d_58%)] text-white">
+    <main
+      className="min-h-screen bg-[#05070d] bg-cover bg-center text-white"
+      style={{
+        backgroundImage: `linear-gradient(90deg, rgba(3,7,13,0.94) 0%, rgba(5,7,13,0.78) 45%, rgba(5,7,13,0.45) 100%), radial-gradient(circle at top, rgba(255,202,40,0.12), transparent 38%), ${startHeroBackground}`,
+      }}>
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-6">
         <header className="flex items-center justify-between">
           <div>
@@ -76,7 +81,7 @@ export default function StartScreen({ onStart }: Props) {
                   ['2', '점령하기', '전투나 구매로 영토를 확보합니다.'],
                   ['3', '키우기', '병력과 건물로 수익 구조를 만듭니다.'],
                 ].map(([num, title, body]) => (
-                  <div key={num} className="rounded border border-gray-800 bg-gray-950/70 p-4">
+                  <div key={num} className="rounded-md border border-amber-700/45 bg-gray-950/72 p-4 shadow-[inset_0_0_0_1px_rgba(255,244,190,0.08)] backdrop-blur-sm">
                     <div className="text-xs font-black text-yellow-400">{num}</div>
                     <div className="mt-1 font-black text-white">{title}</div>
                     <p className="mt-2 text-xs leading-5 text-gray-400">{body}</p>
@@ -84,7 +89,7 @@ export default function StartScreen({ onStart }: Props) {
                 ))}
               </div>
             </div>
-            <div className="rounded border border-yellow-600/70 bg-gray-950/80 p-5 shadow-2xl">
+            <div className="rounded-md border border-yellow-600/70 bg-gray-950/82 p-5 shadow-2xl backdrop-blur-sm">
               <h3 className="text-lg font-black text-yellow-300">승리 조건</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-300">
                 <li><b className="text-white">경제 승리:</b> 상대 골드를 0 이하로 압박</li>
@@ -102,7 +107,7 @@ export default function StartScreen({ onStart }: Props) {
         {screen === 'setup' && (
           <section className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-8">
             <h2 className="text-2xl font-black text-yellow-300">게임 설정</h2>
-            <div className="mt-5 rounded border border-gray-800 bg-gray-950/80 p-5">
+            <div className="mt-5 rounded-md border border-amber-700/50 bg-gray-950/82 p-5 shadow-2xl backdrop-blur-sm">
               <div>
                 <div className="text-xs font-black uppercase tracking-wide text-gray-500">참가 인원</div>
                 <div className="mt-2 grid grid-cols-3 gap-2">

@@ -1,6 +1,6 @@
 {
   "name": "lop",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "main": "electron/main.js",
   "private": true,
   "scripts": {

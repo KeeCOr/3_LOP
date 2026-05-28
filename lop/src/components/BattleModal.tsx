@@ -6,6 +6,7 @@ import { FACTION_COLORS } from '@/lib/factionColors';
 import { TILE_DEFINITIONS } from '@/lib/boardLayout';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
+const battleResultBackground = "url('/generated/lop-battle-result-bg.png')";
 
 export default function BattleModal({ state, dispatch }: Props) {
   const battle = state.activeBattle!;
@@ -21,17 +22,21 @@ export default function BattleModal({ state, dispatch }: Props) {
   const totalDefLost = battle.rounds.reduce((s, r) => s + r.attackerDamage, 0);
 
   return (
-    <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl w-[340px] text-white overflow-hidden">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/75 bg-cover bg-center z-50"
+      style={{
+        backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.58), rgba(0,0,0,0.78)), ${battleResultBackground}`,
+      }}>
+      <div className="w-[380px] overflow-hidden rounded-xl border border-amber-700/70 bg-gray-950/88 text-white shadow-[0_18px_60px_rgba(0,0,0,0.62)] backdrop-blur-sm">
 
         {/* Header */}
-        <div className={`px-4 py-3 text-center font-black text-lg ${won ? 'bg-green-900/60 text-green-300' : 'bg-red-900/60 text-red-300'}`}>
+        <div className={`px-4 py-3 text-center font-black text-lg ${won ? 'bg-green-900/70 text-green-200' : 'bg-red-900/70 text-red-200'}`}>
           {won ? '🏆 전투 승리!' : '💀 전투 패배'} — {tileDef?.label ?? `${battle.defenderTileId}번`}
         </div>
 
         {/* Score */}
-        <div className="grid grid-cols-3 gap-2 items-center px-4 py-3 bg-gray-800/60">
-          <div className={`text-center rounded-lg p-2 border ${atkFc.border}`}>
+        <div className="grid grid-cols-3 gap-2 items-center px-4 py-3 bg-black/45">
+          <div className={`text-center rounded-md bg-gray-950/60 p-2 border ${atkFc.border}`}>
             <div className={`text-[10px] ${atkFc.text} mb-0.5`}>{CHARACTERS[piece.characterType].name} (공격)</div>
             <div className={`text-2xl font-black ${atkFc.textBright}`}>{battle.attackerTroops}</div>
             <div className="text-[10px] text-gray-400">잔존</div>
@@ -41,7 +46,7 @@ export default function BattleModal({ state, dispatch }: Props) {
             <div className="text-2xl">⚔️</div>
             <div className="text-xs text-gray-500">{battle.rounds.length}라운드</div>
           </div>
-          <div className={`text-center rounded-lg p-2 border ${defFc ? defFc.border : 'border-gray-600'}`}>
+          <div className={`text-center rounded-md bg-gray-950/60 p-2 border ${defFc ? defFc.border : 'border-gray-600'}`}>
             <div className={`text-[10px] ${defFc ? defFc.text : 'text-gray-400'} mb-0.5`}>수비대</div>
             <div className={`text-2xl font-black ${defFc ? defFc.textBright : 'text-gray-300'}`}>{battle.defenderTroops}</div>
             <div className="text-[10px] text-gray-400">잔존</div>
@@ -50,7 +55,7 @@ export default function BattleModal({ state, dispatch }: Props) {
         </div>
 
         {/* Round log */}
-        <div className="px-4 py-2 max-h-[160px] overflow-y-auto">
+        <div className="px-4 py-2 max-h-[160px] overflow-y-auto bg-gray-950/58">
           <div className="text-[10px] text-gray-500 font-bold mb-1.5 uppercase tracking-wide">전투 과정</div>
           {battle.rounds.map((r, i) => (
             <div key={i} className="flex items-center gap-1.5 py-1 border-b border-gray-800 last:border-0">
@@ -75,7 +80,7 @@ export default function BattleModal({ state, dispatch }: Props) {
         <div className="px-4 pb-4 pt-2">
           {isPlayerTurn && (
             <button onClick={() => dispatch({ type: 'BATTLE_FINISH' })}
-              className="w-full py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-bold text-sm">
+              className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 rounded-lg font-bold text-sm text-black">
               확인
             </button>
           )}
