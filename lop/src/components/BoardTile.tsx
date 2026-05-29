@@ -19,8 +19,8 @@ const HOME_TYPES = new Set(['start_p', 'start_e']);
 const stoneTileFrame = 'rounded-md border-[3px] shadow-[inset_0_0_0_1px_rgba(255,245,190,0.14),inset_0_-18px_34px_rgba(0,0,0,0.24),0_5px_10px_rgba(0,0,0,0.34)]';
 
 function ownerBgStyle(owner: Tile['owner']): string {
-  if (!owner || owner === 'neutral') return 'bg-gray-950';
-  return `${FACTION_COLORS[owner as PlayerType].bgSolid}/20`;
+  if (!owner || owner === 'neutral') return 'bg-gray-950/72';
+  return `${FACTION_COLORS[owner as PlayerType].bgSolid}/30`;
 }
 
 function ownerBorderStyle(owner: Tile['owner']): string {
@@ -29,9 +29,9 @@ function ownerBorderStyle(owner: Tile['owner']): string {
 }
 
 function homeStyle(owner: Tile['owner']): string {
-  if (!owner || owner === 'neutral') return 'border-gray-400 bg-gray-800/70';
+  if (!owner || owner === 'neutral') return 'border-gray-400 bg-gray-800/58';
   const fc = FACTION_COLORS[owner as PlayerType];
-  return `${fc.border} ${fc.bgSolid}/50`;
+  return `${fc.border} ${fc.bgSolid}/42`;
 }
 
 function troopTextStyle(owner: Tile['owner']): string {
@@ -90,7 +90,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
           ? `${homeStyle(tile.owner)}`
           : isLand
           ? `${ownerBorderStyle(tile.owner)} ${ownerBgStyle(tile.owner)}`
-          : 'border-gray-700 bg-gray-900/60'}
+          : 'border-gray-700 bg-gray-900/50'}
         ${isActive     ? 'ring-2 ring-yellow-400 brightness-125 scale-[1.03]' : ''}
         ${isMoving     ? 'ring-2 ring-white brightness-150 scale-[1.03]' : ''}
         ${isSelectable ? 'ring-2 ring-green-400 brightness-125 animate-pulse' : ''}

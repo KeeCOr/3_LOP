@@ -33,6 +33,7 @@ interface GoldAnim { id: number; amount: number; }
 const boardGameFrame = 'rounded-md border border-amber-700/70 bg-gradient-to-br from-[#16351f]/95 via-[#0d2532]/95 to-[#1c2212]/95 p-2 shadow-[inset_0_0_0_1px_rgba(255,240,180,0.12),0_14px_38px_rgba(0,0,0,0.48)]';
 const boardCenterPanel = 'relative z-0 m-1 hidden min-h-0 flex-col justify-between rounded-md border border-amber-600/70 bg-[#06141d]/88 p-4 shadow-[inset_0_0_0_1px_rgba(255,244,190,0.14),0_0_26px_rgba(0,0,0,0.35)] backdrop-blur-sm lg:flex';
 const boardMapBackground = "url('/generated/lop-board-map-bg.png')";
+const boardTrackBackground = "url('/generated/lop-board-track-bg.png')";
 
 function getCurrentPlayerName(state: GameState): string {
   if (state.currentTurn === 'player') return '플레이어';
@@ -301,6 +302,9 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
             style={{
               gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
               gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
+              backgroundImage: `linear-gradient(180deg, rgba(5,10,13,0.22), rgba(5,10,13,0.38)), ${boardTrackBackground}`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }}>
             <CenterTurnSummary state={state} isAnimating={isAnimating} />
             {TILE_DEFINITIONS.map(def => {

@@ -1,6 +1,6 @@
 # LOP 기획서
 
-최신화: 2026-05-20
+최신화: 2026-05-29
 
 
 ---
@@ -107,3 +107,8 @@ LOP는 짧은 플레이타임을 목표로 한 영토 쟁탈 보드게임이다.
 - 보드 배경용 `lop/public/generated/lop-board-map-bg.png`를 생성했다.
 - 시작 화면 히어로 배경용 `lop/public/generated/lop-start-hero-bg.png`를 생성했다.
 - 전투 결과창 배경용 `lop/public/generated/lop-battle-result-bg.png`를 생성했다.
+
+## 2026-05-29 말판 이미지 적용
+
+- 5x4 외곽 14칸 트랙 구조에 맞춘 말판 베이스 이미지 `lop/public/generated/lop-board-track-bg.png`를 생성했다.
+- 보드 그리드 프레임에 말판 이미지를 직접 적용하고, 타일 배경 투명도를 조정해 석재/금장 말판 질감이 플레이 중에도 보이도록 했다.
