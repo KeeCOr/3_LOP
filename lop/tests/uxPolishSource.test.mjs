@@ -29,6 +29,14 @@ test('BoardTile supports actionable candidate and dimmed states', async () => {
   assert.match(source, /opacity-45/);
 });
 
+test('BoardTile shows a prominent bottom toll strip on occupied land', async () => {
+  const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /occupiedTollStrip/);
+  assert.match(source, /점령 통행세/);
+  assert.match(source, /currentToll/);
+});
+
 test('reference-inspired layout uses premium board game panels', async () => {
   const hud = await readFile(new URL('../src/components/HUD.tsx', import.meta.url), 'utf8');
   const board = await readFile(new URL('../src/components/Board.tsx', import.meta.url), 'utf8');

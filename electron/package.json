@@ -1,6 +1,6 @@
 {
   "name": "lop",
-  "version": "0.4.9",
+  "version": "0.4.11",
   "description": "lop",
   "main": "main.js",
   "scripts": {
@@ -23,7 +23,7 @@
       "icon": "icon.ico"
     },
     "portable": {
-      "artifactName": "LOP_v0.4.9_portable.exe"
+      "artifactName": "LOP_v0.4.11_portable.exe"
     },
     "files": [
       "main.js",

@@ -17,6 +17,8 @@ const BUILDING_IMG: Partial<Record<BuildingType, string[]>> = {
 const CAPTURABLE_TYPES = new Set(['land']);
 const HOME_TYPES = new Set(['start_p', 'start_e']);
 const stoneTileFrame = 'rounded-md border-[3px] shadow-[inset_0_0_0_1px_rgba(255,245,190,0.14),inset_0_-18px_34px_rgba(0,0,0,0.24),0_5px_10px_rgba(0,0,0,0.34)]';
+const occupiedTollStrip = 'flex-none border-t border-orange-300/45 bg-gradient-to-b from-black/72 to-orange-950/88 px-1 py-1.5 text-center shadow-[0_-8px_18px_rgba(0,0,0,0.28)]';
+const unoccupiedPriceStrip = 'flex-none border-t border-black/45 bg-black/55 px-1 py-1.5 text-center';
 
 function ownerBgStyle(owner: Tile['owner']): string {
   if (!owner || owner === 'neutral') return 'bg-gray-950/72';
@@ -171,16 +173,16 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
 
         {/* BOTTOM STRIP — Monopoly style: toll (owned) or purchase price (unowned) */}
         {isLand && (
-          <div className="flex-none border-t border-black/45 bg-black/55 flex flex-col items-center justify-center py-1.5">
+          <div className={`${isOwnedLand ? occupiedTollStrip : unoccupiedPriceStrip} flex flex-col items-center justify-center`}>
             {isOwnedLand ? (
               <>
-                <span className="text-[8px] text-orange-300/70 leading-none uppercase tracking-wide">통행세</span>
-                <span className="text-[11px] text-orange-400 font-black leading-none">{currentToll}g</span>
+                <span className="text-[9px] font-black leading-none text-orange-200 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">점령 통행세</span>
+                <span className="mt-0.5 text-[13px] font-black leading-none text-yellow-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{currentToll}G</span>
               </>
             ) : (
               <>
                 <span className="text-[8px] text-gray-400/70 leading-none uppercase tracking-wide">구매가</span>
-                <span className="text-[11px] text-gray-200 font-black leading-none">{tile.landPrice}g</span>
+                <span className="text-[11px] text-gray-200 font-black leading-none">{tile.landPrice}G</span>
               </>
             )}
           </div>
