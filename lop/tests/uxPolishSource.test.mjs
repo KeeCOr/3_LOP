@@ -45,6 +45,15 @@ test('BoardTile shows a bottom toll strip on start tiles too', async () => {
   assert.match(source, /시작 통행세/);
 });
 
+test('BuildModal groups collect and skip actions together', async () => {
+  const source = await readFile(new URL('../src/components/BuildModal.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /primaryActionRow/);
+  assert.match(source, /징집/);
+  assert.match(source, /그냥 지나가기/);
+  assert.doesNotMatch(source, /<button onClick=\{\(\) => dispatch\(\{ type: 'SKIP_BUILD' \}\)\}\s*className="w-full/);
+});
+
 test('reference-inspired layout uses premium board game panels', async () => {
   const hud = await readFile(new URL('../src/components/HUD.tsx', import.meta.url), 'utf8');
   const board = await readFile(new URL('../src/components/Board.tsx', import.meta.url), 'utf8');

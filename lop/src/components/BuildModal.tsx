@@ -8,6 +8,8 @@ import { CHARACTERS } from '@/lib/gameData';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
+const primaryActionRow = 'flex flex-wrap gap-2';
+
 export default function BuildModal({ state, dispatch }: Props) {
   const tileId = state.activeTileAction!;
   const tile = state.tiles.find(t => t.id === tileId)!;
@@ -124,25 +126,6 @@ export default function BuildModal({ state, dispatch }: Props) {
         {isFree && <div className="text-yellow-300 text-sm mb-2">🎁 왕실 지원 — 다음 건물 1채 무료!</div>}
         {!isFree && discount && <div className="text-green-400 text-sm mb-2">✨ 건설 비용 50% 할인 중!</div>}
 
-        {/* Own tile actions */}
-        {isOwnTile && piece && (
-          <div className="flex gap-2 mb-3">
-            {types.length > 0 && (
-              <button onClick={() => setShowDeploy(true)}
-                className="flex-1 py-2 bg-blue-800 hover:bg-blue-700 border border-blue-600 rounded-lg font-bold text-blue-200 text-sm">
-                🏴 배치
-              </button>
-            )}
-            {tile.troops > 0 && (
-              <button onClick={() => { setShowCollect(true); setCollectAmt(Math.min(tile.troops, maxCollect)); }}
-                className="flex-1 py-2 bg-green-800 hover:bg-green-700 border border-green-600 rounded-lg font-bold text-green-200 text-sm">
-                ⚔️ 징집 ({tile.troops}명)
-              </button>
-            )}
-          </div>
-        )}
-
-
         {/* Buildings */}
         <div className="flex flex-col gap-2 mb-3">
           {buildingTypes.map(type => {
@@ -188,8 +171,24 @@ export default function BuildModal({ state, dispatch }: Props) {
           })}
         </div>
 
-        <button onClick={() => dispatch({ type: 'SKIP_BUILD' })}
-          className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">그냥 지나가기</button>
+        <div className={primaryActionRow}>
+          {isOwnTile && piece && types.length > 0 && (
+            <button onClick={() => setShowDeploy(true)}
+              className="min-w-[120px] flex-1 py-2 bg-blue-800 hover:bg-blue-700 border border-blue-600 rounded-lg font-bold text-blue-200 text-sm">
+              🏴 배치
+            </button>
+          )}
+          {isOwnTile && piece && tile.troops > 0 && (
+            <button onClick={() => { setShowCollect(true); setCollectAmt(Math.min(tile.troops, maxCollect)); }}
+              className="min-w-[120px] flex-1 py-2 bg-green-800 hover:bg-green-700 border border-green-600 rounded-lg font-bold text-green-200 text-sm">
+              ⚔️ 징집 ({tile.troops}명)
+            </button>
+          )}
+          <button onClick={() => dispatch({ type: 'SKIP_BUILD' })}
+            className="min-w-[120px] flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold text-gray-200">
+            그냥 지나가기
+          </button>
+        </div>
       </div>
 
       {/* Collect slider overlay */}

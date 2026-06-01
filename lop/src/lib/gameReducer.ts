@@ -1,5 +1,5 @@
 import type { GameState, Piece, Tile, CharacterType, Difficulty, TroopComp, TroopType, PlayerState, PlayerType, EventCard, BattleState, DragonState, BuildingType } from './gameTypes';
-import { LAND_INDICES, PLAYER_START, AI_START, nextPosition, didPassStart } from './boardLayout';
+import { LAND_INDICES, PLAYER_START, AI_START, TOTAL_TILES, nextPosition, didPassStart } from './boardLayout';
 import { CHARACTERS, TROOP_DATA, LAP_TROOP_BONUS, LAP_GOLD_BONUS, TROOP_PRICE_SCALE, nextHireCost, CHANCE_CARDS } from './gameData';
 import { getToll, getLapIncome, getLapTroops, calcTax, getBuildCost, getBuildingAttackBonus, getBuildingDefenseBonus } from './economyUtils';
 import { runFullBattle, getBattleAttack, getBattleDefense, getGarrisonAttack, getGarrisonDefense } from './battleEngine';
@@ -229,11 +229,18 @@ export type GameAction =
   | { type: 'CONTINUE_MOVE' }
   | { type: 'END_TURN' };
 
-function getDefeatedPiecePosition(state: GameState, owner: PlayerType, currentPosition: number, excludedTileId?: number): number {
-  const ownedTiles = state.tiles.filter(t => t.owner === owner && t.id !== excludedTileId);
-  return ownedTiles.length === 0
-    ? currentPosition
-    : ownedTiles[Math.floor(Math.random() * ownedTiles.length)].id;
+function getDefeatedPiecePosition(state: GameState, owner: PlayerType, currentPosition: number, startTileIndex: number, excludedTileId?: number): number {
+  const startTile = state.tiles.find(t => t.id === startTileIndex);
+  if (startTile?.owner === owner && startTile.id !== excludedTileId) return startTileIndex;
+
+  const backwardDistance = (tileId: number) => (currentPosition - tileId + TOTAL_TILES) % TOTAL_TILES;
+  const ownedTiles = state.tiles
+    .filter(t => t.owner === owner && t.id !== excludedTileId)
+    .map(t => ({ tile: t, distance: backwardDistance(t.id) }))
+    .filter(({ distance }) => distance > 0)
+    .sort((a, b) => a.distance - b.distance);
+
+  return ownedTiles.length === 0 ? currentPosition : ownedTiles[0].tile.id;
 }
 
 function getEnemyPieceOnTile(state: GameState, tileId: number, owner: PlayerType, currentPieceId?: string): Piece | undefined {
@@ -697,7 +704,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           return victoryState;
         } else {
           // Dragon wins — attacker retreats, dragon troops updated
-          const defeatedPosition = getDefeatedPiecePosition(stateAfterBattle, attackerPiece.owner, attackerPiece.position);
+          const defeatedPosition = getDefeatedPiecePosition(stateAfterBattle, attackerPiece.owner, attackerPiece.position, attackerPiece.startTileIndex);
           const newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
             ? { ...p, troops: 0, composition: {}, position: defeatedPosition }
             : p);
@@ -718,7 +725,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ? { ...p, troops: battle.attackerTroops, composition: scaledComp }
           : p);
         if (defendingPiece) {
-          const defeatedPosition = getDefeatedPiecePosition(stateAfterBattle, defendingPiece.owner, defendingPiece.position, battle.defenderTileId);
+          const defeatedPosition = getDefeatedPiecePosition(stateAfterBattle, defendingPiece.owner, defendingPiece.position, defendingPiece.startTileIndex, battle.defenderTileId);
           newPieces = newPieces.map(p => p.id === defendingPiece.id
             ? { ...p, troops: 0, composition: {}, position: defeatedPosition }
             : p);
@@ -776,7 +783,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const penalty = getToll(defenderTile, tollDouble, state.lapCount);
 
         let newTiles = stateAfterBattle.tiles;
-        const attackerDefeatPosition = getDefeatedPiecePosition(stateAfterBattle, attackerPiece.owner, attackerPiece.position);
+        const attackerDefeatPosition = getDefeatedPiecePosition(stateAfterBattle, attackerPiece.owner, attackerPiece.position, attackerPiece.startTileIndex);
         let newPieces = stateAfterBattle.pieces.map(p => p.id === attackerPiece.id
           ? { ...p, troops: 0, composition: {}, position: attackerDefeatPosition }
           : p);
