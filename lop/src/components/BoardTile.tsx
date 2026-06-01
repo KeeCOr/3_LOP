@@ -79,6 +79,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
   }
 
   const isOwnedLand = isLand && tile.owner && tile.owner !== 'neutral' && tile.owner !== null;
+  const showsBottomToll = isOwnedLand || isHome;
 
   return (
     <div
@@ -171,12 +172,12 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
           )}
         </div>
 
-        {/* BOTTOM STRIP — Monopoly style: toll (owned) or purchase price (unowned) */}
-        {isLand && (
-          <div className={`${isOwnedLand ? occupiedTollStrip : unoccupiedPriceStrip} flex flex-col items-center justify-center`}>
-            {isOwnedLand ? (
+        {/* BOTTOM STRIP — Monopoly style: toll (owned/start) or purchase price (unowned) */}
+        {(isLand || isHome) && (
+          <div className={`${showsBottomToll ? occupiedTollStrip : unoccupiedPriceStrip} flex flex-col items-center justify-center`}>
+            {showsBottomToll ? (
               <>
-                <span className="text-[9px] font-black leading-none text-orange-200 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">점령 통행세</span>
+                <span className="text-[9px] font-black leading-none text-orange-200 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{isHome ? '시작 통행세' : '점령 통행세'}</span>
                 <span className="mt-0.5 text-[13px] font-black leading-none text-yellow-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{currentToll}G</span>
               </>
             ) : (

@@ -37,6 +37,14 @@ test('BoardTile shows a prominent bottom toll strip on occupied land', async () 
   assert.match(source, /currentToll/);
 });
 
+test('BoardTile shows a bottom toll strip on start tiles too', async () => {
+  const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /const showsBottomToll = isOwnedLand \|\| isHome/);
+  assert.match(source, /\{\(isLand \|\| isHome\) && \(/);
+  assert.match(source, /시작 통행세/);
+});
+
 test('reference-inspired layout uses premium board game panels', async () => {
   const hud = await readFile(new URL('../src/components/HUD.tsx', import.meta.url), 'utf8');
   const board = await readFile(new URL('../src/components/Board.tsx', import.meta.url), 'utf8');
