@@ -103,6 +103,66 @@ export default function BuildModal({ state, dispatch }: Props) {
     );
   }
 
+  if (showCollect && piece) {
+    const collectAfterTile = tile.troops - collectAmt;
+    const collectAfterPiece = piece.troops + collectAmt;
+
+    return (
+      <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-50 px-3">
+        <div className="bg-gray-900 rounded-xl p-6 min-w-[360px] max-w-[440px] text-white border border-green-700/50 shadow-2xl">
+          <h2 className="text-xl font-bold text-green-400 mb-1">⚔️ 병력 징집</h2>
+          <p className="text-xs text-gray-400 mb-4">내 영토의 주둔 병력을 말에 합류시킵니다.</p>
+
+          <div className="grid grid-cols-2 gap-2 mb-4 text-center text-xs">
+            <div className="rounded-lg bg-gray-800 px-3 py-2">
+              <div className="text-gray-400">현재 영토 병력</div>
+              <div className="mt-1 text-lg font-black text-green-300">{tile.troops}명</div>
+            </div>
+            <div className="rounded-lg bg-gray-800 px-3 py-2">
+              <div className="text-gray-400">징집 선택</div>
+              <div className="mt-1 text-lg font-black text-yellow-300">+{collectAmt}명</div>
+            </div>
+            <div className="rounded-lg bg-gray-800 px-3 py-2">
+              <div className="text-gray-400">징집 후 영토</div>
+              <div className="mt-1 text-lg font-black text-white">{collectAfterTile}명</div>
+            </div>
+            <div className="rounded-lg bg-gray-800 px-3 py-2">
+              <div className="text-gray-400">징집 후 말</div>
+              <div className="mt-1 text-lg font-black text-blue-300">{collectAfterPiece}명</div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <div className="font-bold text-sm">영토 병력</div>
+                <div className="text-xs text-gray-400">징집 가능 최대 {maxCollect}명</div>
+              </div>
+              <div className="text-right">
+                <div className="text-yellow-400 font-bold text-lg">{collectAmt}명 징집</div>
+                <div className="text-xs text-gray-400">{collectAfterTile}명 주둔 유지</div>
+              </div>
+            </div>
+            <input type="range" min={0} max={maxCollect} value={collectAmt}
+              onChange={e => setCollectAmt(Number(e.target.value))}
+              className="w-full" />
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => setShowCollect(false)}
+              className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">뒤로</button>
+            <button
+              onClick={() => { dispatch({ type: 'COLLECT_TROOPS', tileId, amount: collectAmt }); setShowCollect(false); }}
+              disabled={collectAmt === 0}
+              className="flex-1 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-bold text-sm">
+              {collectAmt === 0 ? '징집 안 함' : `${collectAmt}명 징집`}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-gray-900 rounded-xl p-5 min-w-[340px] text-white relative overflow-hidden">
@@ -191,34 +251,6 @@ export default function BuildModal({ state, dispatch }: Props) {
         </div>
       </div>
 
-      {/* Collect slider overlay */}
-      {showCollect && (
-        <div className="absolute inset-0 bg-gray-900/95 rounded-xl p-5 flex flex-col justify-center">
-          <h3 className="text-base font-bold text-green-400 mb-1">⚔️ 병력 징집</h3>
-          <p className="text-xs text-gray-400 mb-3">영토에서 몇 명을 데려갈까요?</p>
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>영토 주둔: {tile.troops}명</span>
-            <span>말 수용: {piece?.troops ?? 0}/{pieceMaxTroops}명</span>
-          </div>
-          <div className="text-center text-2xl font-black text-green-300 mb-2">{collectAmt}명 징집</div>
-          <input type="range" min={0} max={maxCollect} value={collectAmt}
-            onChange={e => setCollectAmt(Number(e.target.value))}
-            className="w-full mb-3" />
-          <div className="text-xs text-gray-500 text-center mb-3">
-            징집 후 영토: {tile.troops - collectAmt}명 | 말: {(piece?.troops ?? 0) + collectAmt}명
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setShowCollect(false)}
-              className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">취소</button>
-            <button
-              onClick={() => { dispatch({ type: 'COLLECT_TROOPS', tileId, amount: collectAmt }); setShowCollect(false); }}
-              disabled={collectAmt === 0}
-              className="flex-1 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-bold text-sm">
-              {collectAmt === 0 ? '징집 안 함' : `${collectAmt}명 징집`}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

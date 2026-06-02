@@ -54,6 +54,17 @@ test('BuildModal groups collect and skip actions together', async () => {
   assert.doesNotMatch(source, /<button onClick=\{\(\) => dispatch\(\{ type: 'SKIP_BUILD' \}\)\}\s*className="w-full/);
 });
 
+test('BuildModal collect UI matches deploy modal and does not cover the full card', async () => {
+  const source = await readFile(new URL('../src/components/BuildModal.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /showCollect && piece/);
+  assert.match(source, /max-w-\[440px\]/);
+  assert.match(source, /징집 선택/);
+  assert.match(source, /징집 후 영토/);
+  assert.match(source, /징집 후 말/);
+  assert.doesNotMatch(source, /absolute inset-0 bg-gray-900\/95/);
+});
+
 test('reference-inspired layout uses premium board game panels', async () => {
   const hud = await readFile(new URL('../src/components/HUD.tsx', import.meta.url), 'utf8');
   const board = await readFile(new URL('../src/components/Board.tsx', import.meta.url), 'utf8');
