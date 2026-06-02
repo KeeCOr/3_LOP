@@ -4,7 +4,7 @@ import type { CharacterType, Difficulty } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
 import { CHAR_IMAGE } from '@/lib/charImages';
 
-const VERSION = '0.4.14';
+const VERSION = '0.4.17';
 const startHeroBackground = "url('/generated/lop-start-hero-bg.png')";
 
 interface Props { onStart: (char: CharacterType, diff: Difficulty, playerCount: 2 | 3 | 4) => void; }
