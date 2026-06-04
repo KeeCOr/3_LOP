@@ -120,3 +120,28 @@ LOP는 짧은 플레이타임을 목표로 한 영토 쟁탈 보드게임이다.
 - 말판 이미지를 다시 생성해 시작기지, 숲, 해안, 광산, 산악, 시장, 이벤트 칸이 서로 다른 어두운 지형색을 갖도록 개선했다.
 - 중앙에서 3D 모델 모의전투를 보여줄 수 있도록 말판 중앙을 산/숲 지형 대신 넓은 평지 아레나 구조로 다시 구성했다.
 - 캐릭터 피규어 디자인과 어울리도록 말판 채도를 낮추고, 리얼한 석재 질감보다 둥글고 데포르메된 장난감 보드 톤으로 다시 조정했다.
+
+<!-- RESOURCE_PREVIEWS_START -->
+## 공유용 이미지 미리보기
+
+> 자동 갱신: 2026-06-04. 공유 시 문서와 함께 아래 이미지 경로가 포함되어야 합니다.
+
+![3_LOP p1_ pirate](../lop/out/player/p1_ pirate.png)
+- `lop/out/player/p1_ pirate.png`
+
+![3_LOP p2_intig](../lop/out/player/p2_intig.png)
+- `lop/out/player/p2_intig.png`
+
+![3_LOP p3_smuggler](../lop/out/player/p3_smuggler.png)
+- `lop/out/player/p3_smuggler.png`
+
+![3_LOP p4_ trickster](../lop/out/player/p4_ trickster.png)
+- `lop/out/player/p4_ trickster.png`
+
+![3_LOP p5_ darkmage](../lop/out/player/p5_ darkmage.png)
+- `lop/out/player/p5_ darkmage.png`
+
+![3_LOP p6_ prist](../lop/out/player/p6_ prist.png)
+- `lop/out/player/p6_ prist.png`
+
+<!-- RESOURCE_PREVIEWS_END -->
