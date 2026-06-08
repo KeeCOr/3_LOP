@@ -7,7 +7,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Pioneer — 항해와 정보의 시대',
+    title: 'Land of Power',
     backgroundColor: '#0d2137',
     webPreferences: {
       nodeIntegration: false,

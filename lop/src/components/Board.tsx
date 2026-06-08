@@ -32,6 +32,7 @@ interface GoldAnim { id: number; amount: number; }
 
 const boardGameFrame = 'rounded-md border border-amber-700/70 bg-gradient-to-br from-[#16351f]/95 via-[#0d2532]/95 to-[#1c2212]/95 p-2 shadow-[inset_0_0_0_1px_rgba(255,240,180,0.12),0_14px_38px_rgba(0,0,0,0.48)]';
 const boardCenterPanel = 'relative z-0 m-1 hidden min-h-0 flex-col justify-between rounded-md border border-amber-600/70 bg-[#06141d]/88 p-4 shadow-[inset_0_0_0_1px_rgba(255,244,190,0.14),0_0_26px_rgba(0,0,0,0.35)] backdrop-blur-sm lg:flex';
+const progressToastFrame = 'fixed right-4 top-24 pointer-events-none z-35 w-[260px] rounded-md border bg-gray-950/92 px-4 py-3 text-center shadow-xl backdrop-blur-sm';
 const boardMapBackground = "url('/generated/lop-board-map-bg.png')";
 const boardTrackBackground = "url('/generated/lop-board-track-bg.png')";
 
@@ -339,18 +340,17 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
 
       {/* Dice notification overlay ??all players */}
       {diceNotif && !turnBanner && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-35">
-          <div className={`flex flex-col items-center gap-3 px-8 py-6 rounded-3xl border-2 shadow-2xl
-            ${diceNotif.fc.border} bg-gray-950/95`}>
+        <div className={`${progressToastFrame} ${diceNotif.fc.border}`}>
+          <div className="flex flex-col items-center gap-2">
             <div className={`text-sm font-bold ${diceNotif.fc.text}`}>{diceNotif.name} 주사위</div>
-            <div className="flex items-center gap-5">
-              <span className="text-5xl leading-none">{['0','1','2','3'][Math.min(diceNotif.d1,3)]}</span>
-              <span className="text-2xl text-gray-500">+</span>
-              <span className="text-5xl leading-none">{['0','1','2','3'][Math.min(diceNotif.d2,3)]}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl leading-none">{['0','1','2','3'][Math.min(diceNotif.d1,3)]}</span>
+              <span className="text-sm text-gray-500">+</span>
+              <span className="text-3xl leading-none">{['0','1','2','3'][Math.min(diceNotif.d2,3)]}</span>
             </div>
-            <div className={`text-3xl font-black ${diceNotif.fc.textBright}`}>{diceNotif.total}칸</div>
+            <div className={`text-xl font-black ${diceNotif.fc.textBright}`}>{diceNotif.total}칸</div>
             {diceNotif.d1 === diceNotif.d2 && (
-              <div className="text-yellow-400 font-bold text-sm animate-pulse">더블! 보너스 턴</div>
+              <div className="text-yellow-400 font-bold text-xs animate-pulse">더블! 보너스 턴</div>
             )}
           </div>
         </div>
@@ -358,9 +358,8 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
 
       {/* Move notification overlay */}
       {moveNotif && !turnBanner && !diceNotif && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-30">
-          <div className={`px-6 py-3 rounded-2xl border text-center shadow-2xl
-            ${moveNotif.fc.border} bg-gray-950/90`}>
+        <div className={`${progressToastFrame} ${moveNotif.fc.border}`}>
+          <div>
             <div className={`text-xs ${moveNotif.fc.text} mb-0.5`}>{moveNotif.name}</div>
             <div className={`text-base font-black ${moveNotif.fc.textBright}`}>
               {moveNotif.char} → {moveNotif.dest}
@@ -382,9 +381,9 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
 
       {/* AI action notification ??fixed center, only when no other overlay */}
       {aiNotif && !turnBanner && !diceNotif && !moveNotif && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-25">
-          <div className={`px-7 py-4 rounded-2xl border-2 text-center max-w-[320px] shadow-2xl ${fc.bg} ${fc.border}`}
-            style={{ animation: 'fadeInOut 2.2s ease-out forwards' }}>
+        <div className={`${progressToastFrame} ${fc.border}`}
+          style={{ animation: 'fadeInOut 2.2s ease-out forwards' }}>
+          <div>
             <div className={`text-[11px] font-bold mb-1 opacity-70 ${fc.text}`}>{getCurrentPlayerName(state)}</div>
             <div className={`text-base font-black ${fc.textBright}`}>{aiNotif}</div>
           </div>
@@ -393,11 +392,11 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
 
       {/* AI mercenary result overlay */}
       {!isPlayerTurn && state.mercenaryResult && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-35">
-          <div className={`px-8 py-5 rounded-2xl border-2 text-center shadow-2xl ${fc.border} bg-gray-950/95`}>
+        <div className={`${progressToastFrame} ${fc.border}`}>
+          <div>
             <div className={`text-xs font-bold mb-2 ${fc.text}`}>{getCurrentPlayerName(state)} 용병 계약!</div>
-            <div className="text-4xl mb-1">{TROOP_DATA[state.mercenaryResult.troopType].emoji}</div>
-            <div className="text-xl font-black text-white">
+            <div className="text-2xl mb-1">{TROOP_DATA[state.mercenaryResult.troopType].emoji}</div>
+            <div className="text-base font-black text-white">
               {TROOP_DATA[state.mercenaryResult.troopType].name} {state.mercenaryResult.amount}명
             </div>
             <div className="text-xs text-orange-400 mt-1">말에 합류 중...</div>

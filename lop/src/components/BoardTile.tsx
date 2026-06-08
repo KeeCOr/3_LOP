@@ -18,11 +18,11 @@ const CAPTURABLE_TYPES = new Set(['land']);
 const HOME_TYPES = new Set(['start_p', 'start_e']);
 const stoneTileFrame = 'rounded-md border-[3px] shadow-[inset_0_0_0_1px_rgba(255,245,190,0.14),inset_0_-18px_34px_rgba(0,0,0,0.24),0_5px_10px_rgba(0,0,0,0.34)]';
 const occupiedTollStrip = 'flex-none border-t border-orange-300/45 bg-gradient-to-b from-black/72 to-orange-950/88 px-1 py-1.5 text-center shadow-[0_-8px_18px_rgba(0,0,0,0.28)]';
-const unoccupiedPriceStrip = 'flex-none border-t border-black/45 bg-black/55 px-1 py-1.5 text-center';
+const boardTileBackground = "url('/generated/lop-board-track-bg.png')";
 
 function ownerBgStyle(owner: Tile['owner']): string {
-  if (!owner || owner === 'neutral') return 'bg-gray-950/72';
-  return `${FACTION_COLORS[owner as PlayerType].bgSolid}/30`;
+  if (!owner || owner === 'neutral') return 'bg-gray-950/40';
+  return `${FACTION_COLORS[owner as PlayerType].bgSolid}/24`;
 }
 
 function ownerBorderStyle(owner: Tile['owner']): string {
@@ -31,14 +31,20 @@ function ownerBorderStyle(owner: Tile['owner']): string {
 }
 
 function homeStyle(owner: Tile['owner']): string {
-  if (!owner || owner === 'neutral') return 'border-gray-400 bg-gray-800/58';
+  if (!owner || owner === 'neutral') return 'border-gray-400 bg-gray-800/38';
   const fc = FACTION_COLORS[owner as PlayerType];
-  return `${fc.border} ${fc.bgSolid}/42`;
+  return `${fc.border} ${fc.bgSolid}/30`;
 }
 
 function troopTextStyle(owner: Tile['owner']): string {
   if (!owner || owner === 'neutral') return 'text-gray-400';
   return FACTION_COLORS[owner as PlayerType].text;
+}
+
+function getTileBackgroundPosition(gridCol: number, gridRow: number): string {
+  const tileBgX = ((gridCol - 1) / 4) * 100;
+  const tileBgY = ((gridRow - 1) / 3) * 100;
+  return `${tileBgX}% ${tileBgY}%`;
 }
 
 interface Props {
@@ -80,6 +86,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
 
   const isOwnedLand = isLand && tile.owner && tile.owner !== 'neutral' && tile.owner !== null;
   const showsBottomToll = isOwnedLand || isHome;
+  const tileBackgroundPosition = getTileBackgroundPosition(def.gridCol, def.gridRow);
 
   return (
     <div
@@ -88,12 +95,18 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
       className={`relative cursor-pointer transition-opacity ${isDimmed ? 'opacity-45' : 'opacity-100'}`}>
 
       {/* Main tile — Monopoly-style layout */}
-      <div className={`h-full flex flex-col overflow-hidden transition-all ${stoneTileFrame}
+      <div
+        style={{
+          backgroundImage: `linear-gradient(180deg, rgba(4,7,9,0.18), rgba(4,7,9,0.36)), ${boardTileBackground}`,
+          backgroundSize: '100% 100%, 500% 400%',
+          backgroundPosition: `center, ${tileBackgroundPosition}`,
+        }}
+        className={`h-full flex flex-col overflow-hidden transition-all ${stoneTileFrame}
         ${isHome
           ? `${homeStyle(tile.owner)}`
           : isLand
           ? `${ownerBorderStyle(tile.owner)} ${ownerBgStyle(tile.owner)}`
-          : 'border-gray-700 bg-gray-900/50'}
+          : 'border-gray-700 bg-gray-900/34'}
         ${isActive     ? 'ring-2 ring-yellow-400 brightness-125 scale-[1.03]' : ''}
         ${isMoving     ? 'ring-2 ring-white brightness-150 scale-[1.03]' : ''}
         ${isSelectable ? 'ring-2 ring-green-400 brightness-125 animate-pulse' : ''}
@@ -172,20 +185,11 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
           )}
         </div>
 
-        {/* BOTTOM STRIP — Monopoly style: toll (owned/start) or purchase price (unowned) */}
-        {(isLand || isHome) && (
-          <div className={`${showsBottomToll ? occupiedTollStrip : unoccupiedPriceStrip} flex flex-col items-center justify-center`}>
-            {showsBottomToll ? (
-              <>
-                <span className="text-[9px] font-black leading-none text-orange-200 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{isHome ? '시작 통행세' : '점령 통행세'}</span>
-                <span className="mt-0.5 text-[13px] font-black leading-none text-yellow-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{currentToll}G</span>
-              </>
-            ) : (
-              <>
-                <span className="text-[8px] text-gray-400/70 leading-none uppercase tracking-wide">구매가</span>
-                <span className="text-[11px] text-gray-200 font-black leading-none">{tile.landPrice}G</span>
-              </>
-            )}
+        {/* BOTTOM STRIP — toll only for occupied land and start tiles */}
+        {showsBottomToll && (
+          <div className={`${occupiedTollStrip} flex flex-col items-center justify-center`}>
+            <span className="text-[9px] font-black leading-none text-orange-200 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{isHome ? '시작 통행세' : '점령 통행세'}</span>
+            <span className="mt-0.5 text-[13px] font-black leading-none text-yellow-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{currentToll}G</span>
           </div>
         )}
 
@@ -193,19 +197,19 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
 
       {/* Pieces — outside overflow-hidden, standing at tile bottom */}
       {piecesHere.length > 0 && (
-        <div className="absolute bottom-6 right-0.5 flex flex-col-reverse gap-0.5 z-10 pointer-events-none">
+        <div className="absolute bottom-7 right-[-2px] flex flex-col-reverse gap-0.5 z-10 pointer-events-none">
           {piecesHere.map(p => (
             <div key={p.id}
               onClick={e => { e.stopPropagation(); onPieceClick?.(p.id); }}
               title={`${p.id}: ${p.troops}명`}
-              className={`relative w-14 h-[72px] pointer-events-auto
+              className={`relative w-16 h-[88px] pointer-events-auto
                 ${isMoving ? 'scale-110' : ''}
                 ${onPieceClick ? 'cursor-pointer hover:brightness-125' : ''}`}>
               <img src={CHAR_IMAGE[p.characterType]} alt={p.characterType}
                 className="w-full h-full object-contain drop-shadow-lg" />
               <div className={`absolute bottom-0 left-0 right-0 rounded-sm py-[1px] ${FACTION_COLORS[p.owner].badge}`}
                 style={{ textShadow: '0 0 2px #000' }}>
-                <div className="text-[9px] font-black text-center leading-none">{p.troops}명</div>
+                <div className="text-[10px] font-black text-center leading-none">{p.troops}명</div>
                 <div className="flex flex-wrap justify-center gap-x-[2px] leading-none">
                   {(Object.entries(p.composition) as [TroopType, number][])
                     .filter(([, n]) => (n ?? 0) > 0)

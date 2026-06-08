@@ -20,6 +20,23 @@ test('Board renders a center turn summary in the empty board space', async () =>
   assert.match(source, /gridColumn:\s*'2 \/ span 3'/);
 });
 
+test('Board keeps progress notifications out of the board center', async () => {
+  const source = await readFile(new URL('../src/components/Board.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /progressToastFrame/);
+  assert.match(source, /fixed right-4 top-24/);
+  assert.doesNotMatch(source, /fixed inset-0 pointer-events-none flex items-center justify-center z-35/);
+  assert.doesNotMatch(source, /fixed inset-0 pointer-events-none flex items-center justify-center z-30/);
+  assert.doesNotMatch(source, /fixed inset-0 pointer-events-none flex items-center justify-center z-25/);
+});
+
+test('Electron window title uses the LOP game name', async () => {
+  const source = await readFile(new URL('../../electron/main.js', import.meta.url), 'utf8');
+
+  assert.match(source, /title:\s*'Land of Power'/);
+  assert.doesNotMatch(source, /Pioneer/);
+});
+
 test('BoardTile supports actionable candidate and dimmed states', async () => {
   const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
 
@@ -27,6 +44,17 @@ test('BoardTile supports actionable candidate and dimmed states', async () => {
   assert.match(source, /isDimmed/);
   assert.match(source, /ring-cyan-300/);
   assert.match(source, /opacity-45/);
+});
+
+test('BoardTile uses cropped board art and larger pieces', async () => {
+  const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /boardTileBackground/);
+  assert.match(source, /lop-board-track-bg\.png/);
+  assert.match(source, /500% 400%/);
+  assert.match(source, /tileBgX/);
+  assert.match(source, /tileBgY/);
+  assert.match(source, /w-16 h-\[88px\]/);
 });
 
 test('BoardTile shows a prominent bottom toll strip on occupied land', async () => {
@@ -41,8 +69,16 @@ test('BoardTile shows a bottom toll strip on start tiles too', async () => {
   const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
 
   assert.match(source, /const showsBottomToll = isOwnedLand \|\| isHome/);
-  assert.match(source, /\{\(isLand \|\| isHome\) && \(/);
+  assert.match(source, /\{showsBottomToll && \(/);
   assert.match(source, /시작 통행세/);
+});
+
+test('BoardTile does not show a bottom strip for unoccupied land', async () => {
+  const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(source, /unoccupiedPriceStrip/);
+  assert.doesNotMatch(source, /showsBottomToll \? occupiedTollStrip :/);
+  assert.doesNotMatch(source, /landPrice\}G/);
 });
 
 test('BuildModal groups collect and skip actions together', async () => {
