@@ -1,0 +1,6 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,8108,e=>{"use strict";var t=e.i(43476),i=e.i(71645);e.s(["default",0,function(){let[e,n]=(0,i.useState)(!1);return((0,i.useEffect)(()=>{"serviceWorker"in navigator&&navigator.serviceWorker.register("./sw.js").catch(()=>{});let e=()=>{n(window.matchMedia("(pointer: coarse)").matches&&window.innerHeight>window.innerWidth)};return e(),window.addEventListener("resize",e),window.addEventListener("orientationchange",e),()=>{window.removeEventListener("resize",e),window.removeEventListener("orientationchange",e)}},[]),e)?(0,t.jsxs)("div",{className:"fixed inset-0 z-[9999] bg-gray-950 flex flex-col items-center justify-center gap-4",children:[(0,t.jsx)("div",{className:"text-6xl",style:{animation:"spin90 1.5s ease-in-out infinite alternate"},children:"📱"}),(0,t.jsx)("div",{className:"text-white text-xl font-bold",children:"화면을 가로로 돌려주세요"}),(0,t.jsx)("div",{className:"text-gray-400 text-sm",children:"가로 모드에서 플레이 가능합니다"}),(0,t.jsx)("style",{children:`
+        @keyframes spin90 {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(90deg); }
+        }
+      `})]}):null}])}]);
