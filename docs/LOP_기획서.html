@@ -110,6 +110,14 @@
       </ul>
     </section>
   </main>
+<section>
+  <h2>2026-06-22 출시 준비 개선</h2>
+  <ul>
+    <li>Electron 데스크톱 래퍼가 <code>file://</code>로 <code>index.html</code>을 직접 여는 방식 대신, 앱 내부에서 <code>127.0.0.1</code> 로컬 HTTP 서버를 띄워 <code>electron/dist</code> 정적 빌드를 제공하도록 변경했다.</li>
+    <li>Next export 산출물의 리소스 경로가 데스크톱 패키지에서 안정적으로 200 응답하도록 만들어 까만 화면 배포 위험을 줄였다.</li>
+    <li>실행파일 버전을 <code>0.4.21</code>로 올리고, 릴리즈 산출물 이름을 <code>LOP_v0.4.21_portable.exe</code> 기준으로 맞췄다.</li>
+  </ul>
+</section>
 <!-- RESOURCE_PREVIEWS_START -->
 <section class="resource-previews">
   <h2>공유용 이미지 미리보기</h2>

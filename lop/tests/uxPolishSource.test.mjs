@@ -37,6 +37,15 @@ test('Electron window title uses the LOP game name', async () => {
   assert.doesNotMatch(source, /Pioneer/);
 });
 
+test('Electron serves the exported app over local HTTP instead of file URLs', async () => {
+  const source = await readFile(new URL('../../electron/main.js', import.meta.url), 'utf8');
+
+  assert.match(source, /createServer/);
+  assert.match(source, /127\.0\.0\.1/);
+  assert.match(source, /loadURL/);
+  assert.doesNotMatch(source, /loadFile/);
+});
+
 test('BoardTile supports actionable candidate and dimmed states', async () => {
   const source = await readFile(new URL('../src/components/BoardTile.tsx', import.meta.url), 'utf8');
 
