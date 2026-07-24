@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LOP 기획서</title>
+  <style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65;max-width:1040px;margin:0 auto;padding:40px 24px;color:#20242a;background:#fafafa}h1{font-size:34px;margin:0 0 20px}h2{font-size:24px;margin-top:34px;border-bottom:1px solid #ddd;padding-bottom:6px}h3{font-size:18px;margin-top:24px;color:#32435f}p,li,td,th{font-size:15px}li{margin:5px 0}code{background:#fff;border:1px solid #ddd;border-radius:4px;padding:1px 4px}pre{white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px 12px;overflow:auto}pre code{border:0;padding:0;background:transparent}table{border-collapse:collapse;width:100%;background:#fff;margin:12px 0}td,th{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}figure{margin:18px 0;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px}img{max-width:100%;height:auto;display:block;border-radius:6px}figcaption{font-size:13px;color:#626b76;margin-top:8px}</style>
+</head>
+<body>
+<h1>LOP 기획서</h1>
+<p>문제 정의: 작은 선택이 다음 국면에 영향을 주는 게임을 원하는 플레이어가 단순 반복이 아닌 판단의 기록을 기대한다.</p>
+<h2>게임 소개</h2>
+<p>전략 선택과 성장 경로가 누적되는 실험형 전술 프로젝트.</p>
+<p>LOP의 핵심 매력은 한 번의 선택이 다음 장면의 위험도, 보상, 성장 방향으로 이어지는 구조다. 이 문서는 처음 보는 사람에게 게임의 재미와 현재 방향을 빠르게 소개하기 위한 단일 기획서이며, 세부 변경 이력은 별도 업데이트 내역서에서 관리한다.</p>
+<h2>한 줄 소개</h2>
+<p>전략 선택과 성장 경로가 누적되는 실험형 전술 프로젝트.</p>
+<h2>핵심 루프</h2>
+<p>유저가 현재 전장의 정보를 읽고 선택을 하면 전투/운영 결과가 갱신되고, 그 보상과 손실 때문에 다시 다음 선택을 준비한다.</p>
+<h2>게임 플레이 예시</h2>
+<ul>
+<li>1단계: 플레이어가 LOP의 현재 목표, 보유 자원, 즉시 대응해야 할 위험을 확인한다.</li>
+<li>2단계: 카드, 유닛, 배치, 명령, 이동 중 현재 상황에 맞는 핵심 행동을 선택한다.</li>
+<li>3단계: 선택 결과가 전투, 운영, 보상, 손실로 즉시 갱신되고 다음 판단의 근거가 된다.</li>
+<li>4단계: 획득한 보상이나 변화한 상태를 바탕으로 다음 선택을 준비하며 핵심 루프를 반복한다.</li>
+<li>플레이 감각: 짧은 세션 안에서 상황 파악, 의미 있는 선택, 즉각적인 피드백, 다음 목표 제시가 끊기지 않는 흐름을 지향한다.</li>
+</ul>
+<h2>핵심 재미</h2>
+<ul>
+<li>읽기 쉬운 상황 판단: 지금 위험한 요소와 얻을 수 있는 보상이 한눈에 들어온다.</li>
+<li>직접적인 선택 피드백: 선택 직후 전투, 점수, 자원, 성장 상태가 변해 손맛을 만든다.</li>
+<li>누적되는 성장감: 반복 플레이가 단순 재시작이 아니라 다음 전략의 재료로 이어진다.</li>
+</ul>
+<h2>주요 시스템</h2>
+<ul>
+<li>핵심 선택 시스템: 현재 국면에서 가능한 행동을 5개 이하의 명확한 선택지로 제시한다.</li>
+<li>위험/보상 피드백: 행동 전후의 이득, 손실, 위협 변화를 빠르게 보여준다.</li>
+<li>성장과 해금: 세션 결과가 능력, 카드, 유닛, 건물, 장비, 스테이지 등 다음 플레이의 선택지를 넓힌다.</li>
+<li>상태별 UX: 로딩, 빈 상태, 오류, 많은 데이터, 긴 텍스트 상황에서도 레이아웃이 무너지지 않도록 관리한다.</li>
+<li>실행 안정성: 테스트와 빌드 산출물을 기준으로 현재 플레이 가능한 범위를 계속 확인한다.</li>
+</ul>
+<h2>게임 구성과 규칙 (GDD 통합)</h2>
+<ul>
+<li>통합 기준 문서: <code>superpowers/specs/2026-04-21-lop-design.md</code>, <code>superpowers/specs/2026-05-13-lop-layout-onboarding-redesign.md</code></li>
+<li>작성 기준: 16_PokerStrike_GDD처럼 화면 구조, 핵심 시스템, 진행/승패 규칙, UI/HUD, 미결 항목을 한 문서에서 바로 읽을 수 있게 정리한다.</li>
+</ul>
+<h3>화면/플레이 구조</h3>
+<ul>
+<li><strong>1. 게임 개요</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<table>
+<tr><th>항목</th><th>내용</th></tr>
+<tr><td>장르</td><td>전략 보드게임 (모노폴리 메카닉 참조, IP 무관)</td></tr>
+<tr><td>플랫폼</td><td>브라우저 (Next.js), 추후 Electron + 온라인 멀티</td></tr>
+<tr><td>핵심 루프</td><td>주사위 굴림 → 말 선택 → 이동 → 칸 이벤트 → 전투/건설/구매</td></tr>
+<tr><td>승리 조건</td><td>상대방을 파산(돈 0)시키기</td></tr>
+<tr><td>패배 조건</td><td>돈이 0이 되면 탈락</td></tr>
+</table>
+<ul>
+<li><strong>3. 게임 플로우</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<p>  - 게임 시작 → 캐릭터 랜덤 선택 연출 → 보드 시작 (시작 배치)</p>
+<p>  - ├→ 주사위 굴림 (2d4, 0~6 + 보너스)</p>
+<p>  - ├→ 이동할 말 1개 선택</p>
+<p>  - ├→ 선택한 말 이동 (애니메이션)</p>
+<p>  - ├→ [이동 경로 통과] 내 영토 지나칠 때 → 병력 징집 선택 (PassCollect)</p>
+<p>  - ├→ 중립 땅: 전투 또는 골드 지불로 구매</p>
+<p>  - ├→ 내 땅: 건물 건설/업그레이드 여부 선택</p>
+<ul>
+<li><strong>4. 보드 레이아웃</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<p>  - 5×4 외곽 14칸 구성. 플레이어(P: index 0)와 AI(E: index 7)는 대각선 반대편에서 시작.</p>
+<p>  - [P:왕도성문] [드래곤고원] [남부평원] [용병소] [황금계곡]</p>
+<p>  - [북부고지] [운명의길:찬스]</p>
+<p>  - [고갯길:찬스] [서쪽숲길]</p>
+<p>  - [포호스강] [용병시장] [철광산맥] [동부항구] [E:변방요새]</p>
+<table>
+<tr><th>칸 종류</th><th>수</th><th>index</th><th>설명</th></tr>
+</table>
+<h3>핵심 시스템</h3>
+<ul>
+<li><strong>2. 기술 스택</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<p>  - <strong>Next.js 16 + React 19 + TypeScript</strong></p>
+<p>  - <strong>Tailwind CSS v4</strong> — UI 스타일링</p>
+<p>  - 상태관리: React <code>useReducer</code> (외부 라이브러리 없음)</p>
+<p>  - <strong>Electron 41</strong> — 데스크탑 빌드 (portable exe)</p>
+<p>  - 캐릭터 원화: <code>/public/player/</code> PNG 7종 (pirate, agitator, smuggler, swindler, warlock, cleric, general)</p>
+<ul>
+<li><strong>5.1 기본 능력치 &amp; 고유 스킬</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<table>
+<tr><th>능력치</th><th>역할</th></tr>
+<tr><td><code>통솔력</code></td><td>데리고 다닐 수 있는 최대 병력 수 결정</td></tr>
+<tr><td><code>고유 스킬</code></td><td>조건 충족 시 자동 발동되는 패시브 효과</td></tr>
+</table>
+<p>  - 게임 시작 시 캐릭터 <strong>7종</strong> 중 랜덤 1개 선택. 공격/방어 배율은 모두 동일(1.0×), 통솔력과 고유 스킬로 차별화.</p>
+<table>
+<tr><th>캐릭터</th><th>통솔력</th><th>고유 스킬</th><th>스킬 효과</th><th>발동 조건</th></tr>
+<tr><td>해적</td><td>45명</td><td>약탈</td><td>골드 +100</td><td>전투 승리 시</td></tr>
+<tr><td>선동가</td><td>40명</td><td>선동</td><td>랜덤 병종 2명 말에 합류</td><td>랩 완주 시</td></tr>
+<tr><td>종교인</td><td>40명</td><td>축복</td><td>보유 영토에 랜덤 병종 3명 분배</td><td>랩 완주 시</td></tr>
+</table>
+<ul>
+<li><strong>6.1 병종 (6종)</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<table>
+<tr><th>병종</th><th>이모지</th><th>공격</th><th>방어</th><th>가격</th><th>상성(강한 상대)</th><th>비고</th></tr>
+<tr><td>검사</td><td>⚔️</td><td>1.1×</td><td>1.0×</td><td>60G</td><td>창병</td><td>기본 균형형</td></tr>
+<tr><td>궁사</td><td>🏹</td><td>1.5×</td><td>0.5×</td><td>80G</td><td>검사·창병</td><td>고공격·저방어</td></tr>
+<tr><td>기마병</td><td>🐎</td><td>1.4×</td><td>0.7×</td><td>120G</td><td>검사·궁사</td><td>창병에 취약</td></tr>
+<tr><td>창병</td><td>🔱</td><td>0.6×</td><td>1.6×</td><td>70G</td><td>기마병</td><td>저공격·고방어</td></tr>
+<tr><td>암살자</td><td>🥷</td><td>0.7× (말전투 3.8×)</td><td>0.4×</td><td>—</td><td>—</td><td>용병소 전용. 말 전투 시 극강</td></tr>
+<tr><td>광전사</td><td>🪓</td><td>2.8×</td><td>0.15×</td><td>—</td><td>—</td><td>용병소 전용. 상성 없음. 고공격·극저방어</td></tr>
+</table>
+<p>  - &gt; 암살자·광전사는 용병소 계약으로만 획득. 상점 구매 불가.</p>
+<p>  - <strong>상성 보너스</strong>: 아군이 적의 약점 병종을 보유할 때 공격력 보너스(+최대 60%, 구성 비율 비례) 자동 적용.</p>
+<ul>
+<li><strong>6.2 병력 운용</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<table>
+<tr><th>항목</th><th>내용</th></tr>
+<tr><td>시작 병력</td><td>말마다 20명 (검사 15 + 궁사 5)</td></tr>
+<tr><td>최대 보유</td><td>말의 통솔력에 따라 결정 (사기꾼 25 ~ 장군 60)</td></tr>
+<tr><td>영토 자동 생산</td><td>한 바퀴 완주 시 내 영토마다 baseLapProduction + 병영 보너스 자동 증가</td></tr>
+<tr><td>전투 점령 자동 배치</td><td>전투 승리 시 기본 5명(검사) 즉시 배치됨</td></tr>
+<tr><td>이동 중 징집</td><td>내 땅을 지나칠 때 PassCollect 모달 → 원하는 만큼 말에 징집 가능</td></tr>
+</table>
+<p>  - 말이 이동할 때 데리고 다니는 병력만 전투에 참여</p>
+<p>  - 땅에 배치된 병력은 수비 전용</p>
+<p>  - 내 땅 착지 시 말에서 땅으로 배치 또는 땅에서 말로 징집 가능</p>
+<h3>진행/승패 규칙</h3>
+<ul>
+<li><strong>14.1 타겟 플랫폼 및 배포 방식</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<table>
+<tr><th>플랫폼</th><th>배포 방식</th><th>수익 모델</th></tr>
+<tr><td>모바일 웹 (PWA)</td><td>무료 설치</td><td>F2P + 보석 IAP</td></tr>
+<tr><td>PC (Electron)</td><td>무료 다운로드</td><td>F2P + 보석 IAP</td></tr>
+<tr><td>추후: 앱스토어 (iOS/Android)</td><td>무료 설치</td><td>F2P + 보석 IAP + 시즌 패스</td></tr>
+</table>
+<ul>
+<li><strong>14.7 수익 목표 및 핵심 지표</strong> (superpowers/specs/2026-04-21-lop-design.md)</li>
+</ul>
+<table>
+<tr><th>지표</th><th>목표</th></tr>
+<tr><td>전환율 (무료→유료)</td><td>5~10%</td></tr>
+<tr><td>ARPU (평균 유저 결제액)</td><td>₩3,000~₩6,000</td></tr>
+<tr><td>ARPPU (결제 유저 평균)</td><td>₩15,000~₩30,000</td></tr>
+<tr><td>리텐션 (7일)</td><td>30% 이상</td></tr>
+<tr><td>리텐션 (30일)</td><td>15% 이상</td></tr>
+</table>
+<h3>UI/HUD/피드백</h3>
+<ul>
+<li><strong>Error Handling And Edge Cases</strong> (superpowers/specs/2026-05-13-lop-layout-onboarding-redesign.md)</li>
+</ul>
+<p>  - If no tile is selected, the panel shows the current active tile or a compact board guide.</p>
+<p>  - During animations, the action bar should indicate movement is in progress and avoid showing premature modal actions.</p>
+<p>  - On narrow screens, the right panel collapses below the board or becomes a tabbed panel to avoid crushing the board.</p>
+<p>  - Text must fit in buttons and panels without overlap on desktop and mobile.</p>
+<p>  - Existing Korean copy should be reviewed while editing to avoid preserving mojibake where clean copy is needed.</p>
+<ul>
+<li><strong>Testing</strong> (superpowers/specs/2026-05-13-lop-layout-onboarding-redesign.md)</li>
+</ul>
+<p>  - Verification should include:</p>
+<p>  - <code>npm run build</code> inside <code>lop</code>.</p>
+<p>  - Manual browser check of the start flow.</p>
+<p>  - Manual browser check of the play screen through at least roll, select piece, move, tile action, and one modal.</p>
+<p>  - Responsive checks for desktop and narrow viewport.</p>
+<p>  - Required final packaging commands from <code>AGENTS.md</code> after implementation:</p>
+<p>  - frontend build from the correct app directory.</p>
+<h3>구현 메모/미결</h3>
+<ul>
+<li><strong>Start And Onboarding Design</strong> (superpowers/specs/2026-05-13-lop-layout-onboarding-redesign.md)</li>
+</ul>
+<p>  - The start flow becomes three steps:</p>
+<p>  1. Goal: a concise explanation of winning, losing, turns, and board ownership.</p>
+<p>  2. Setup: player count and difficulty, with short descriptions for each option.</p>
+<p>  3. Character reveal: random character selection with ability summary and a first-turn strategy hint.</p>
+<p>  - The first play turn should include lightweight contextual hints in the action bar. These hints should disappear naturally after the player completes the relevant action, without creating a separate tutorial mode.</p>
+<h2>MVP 가설</h2>
+<table>
+<tr><th>기능</th><th>검증할 가설</th><th>검증 방법</th></tr>
+<tr><td>핵심 전투/운영 루프</td><td>플레이어는 한 판 안에서 선택 결과를 이해하면 다음 판을 자발적으로 시작한다.</td><td>1회 플레이 후 재시작률 60% 이상</td></tr>
+<tr><td>위험/보상 표시</td><td>위험과 보상이 동시에 보이면 선택 시간이 줄고 납득도가 오른다.</td><td>주요 선택 평균 8초 이내, 결과 불만 피드백 20% 이하</td></tr>
+<tr><td>성장 보상</td><td>보상이 다음 전략을 바꾸면 반복 플레이 피로가 낮아진다.</td><td>3판 내 서로 다른 빌드 선택률 50% 이상</td></tr>
+</table>
+<h2>레퍼런스 분석</h2>
+<ul>
+<li>장르 기준 레퍼런스는 한 판 시작까지 3단계 이내, 첫 의미 있는 선택까지 30초 이내가 목표다.</li>
+<li>적용 교훈: 규칙 설명보다 먼저 선택 가능한 상황을 보여주고, 결과 화면에서 다음 판의 개선 포인트를 바로 제안한다.</li>
+</ul>
+<h2>현재 개발 상태 예상 수치</h2>
+<ul>
+<li>완성 목표 대비 구현 체감도: 약 76%</li>
+<li>첫 세션에서 핵심 루프가 전달될 가능성: 약 82%</li>
+<li>UI/리소스 일관성 체감: 약 72%</li>
+<li>콘텐츠와 반복 플레이 분량 충족도: 약 72%</li>
+<li>빌드/실행 안정성 기대치: 약 86%</li>
+<li>해석 기준: 현재 문서, 최근 산출물 기록, 연결된 예시 이미지 유무를 기준으로 한 사전 추정치이며 실제 플레이 테스트 후 ±15%p 정도 보정이 필요하다.</li>
+</ul>
+<ul>
+<li>첫 세션 평균 플레이 시간 8분 이상</li>
+<li>첫 세션 내 2회차 진입률 55% 이상</li>
+<li>핵심 선택 화면에서 무응답/이탈률 15% 이하</li>
+</ul>
+<h2>현재 구현 상태</h2>
+<ul>
+<li>이 문서는 2026-06-24 기준으로 현재 플레이 방향과 구현 체감 상태를 요약한다.</li>
+<li>핵심 루프, 조작 원칙, 리소스 적용 현황, 빌드 기준은 프로젝트별 실제 구현과 산출물 기록을 기준으로 계속 보정한다.</li>
+<li>세부 변경 이력은 별도 업데이트 내역서에서 관리하고, 본 기획서는 처음 보는 사람이 현재 방향을 빠르게 이해하는 공유 문서로 유지한다.</li>
+<li>새 기능, 밸런스 변경, 리소스 교체, UX 개선이 들어가면 본문과 HTML 문서를 함께 갱신한다.</li>
+</ul>
+<h2>조작과 UX 원칙</h2>
+<ul>
+<li>주요 버튼은 44px 이상으로 유지하고, 화면당 CTA 강조색은 하나만 사용한다.</li>
+<li>버튼/선택지는 한 번에 5개 이하로 노출해 판단 부담을 줄인다.</li>
+<li>로딩, 빈 상태, 에러, 많은 데이터, 긴 텍스트 상태를 각각 별도 화면/컴포넌트로 확인한다.</li>
+<li>HUD 동일 레이어 요소는 겹치지 않게 배치하고, 겹침이 필요한 효과는 별도 depth/z-order를 쓴다.</li>
+</ul>
+<h2>적용 리소스</h2>
+<ul>
+<li>런타임에 쓰이는 대표 이미지와 UI 리소스는 프로젝트별 asset/public/Resources 경로를 기준으로 관리한다.</li>
+<li>새 이미지가 필요할 때는 프로젝트 접두어를 포함한 lowercase kebab-case 파일명을 사용한다.</li>
+<li>최종 런타임 비주얼은 PNG/WebP 등 비트맵 자산을 우선 사용하고, SVG 또는 코드 드로잉은 문서/임시 참조로만 남긴다.</li>
+</ul>
+<h2>공유용 이미지 미리보기</h2>
+<figure><img src="archive/LOP_gameplay_preview_v1.png" alt="LOP 공유용 예시 1"><figcaption>LOP 공유용 예시 1</figcaption></figure>
+<figure><img src="LOP_01_플레이예시.png" alt="LOP 공유용 예시 2"><figcaption>LOP 공유용 예시 2</figcaption></figure>
+<ul>
+<li>docs/LOP_01_플레이예시.png</li>
+<li>docs/LOP_레퍼런스_layout-polish-check-0.4.8.png</li>
+<li>lop/public/building.png</li>
+</ul>
+<h2>빌드, 테스트, 릴리스</h2>
+<ul>
+<li>프로젝트별 엔진/에디터 빌드 절차를 따른다.</li>
+<li>문서 전용 갱신에서는 실행 파일을 새로 생성하지 않았다.</li>
+</ul>
+<h2>남은 리스크와 다음 우선순위</h2>
+<ul>
+<li>첫 화면에서 게임의 목표와 다음 행동이 5초 안에 보이는지 확인한다.</li>
+<li>주요 선택의 결과 예측과 실제 결과가 어긋나는 지점을 플레이 테스트로 수집한다.</li>
+<li>기획서에 남아 있던 변경 이력성 내용은 업데이트 내역서로 계속 이동해 소개 문서의 밀도를 유지한다.</li>
+</ul>
+</body>
+</html>

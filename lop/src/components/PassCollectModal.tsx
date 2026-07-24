@@ -18,8 +18,8 @@ export default function PassCollectModal({ state, dispatch }: Props) {
   const [collectAmt, setCollectAmt] = useState(maxCollect);
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl p-5 w-[300px] text-white border-t-2 border-blue-500">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-xl p-5 w-full max-w-[300px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white border-t-2 border-blue-500">
         <h3 className="text-base font-bold text-blue-400 mb-1">🏰 영토 통과</h3>
         <p className="text-xs text-gray-400 mb-3">이동 경로에 주둔 병력이 있는 영토를 지나쳤습니다.</p>
         <div className="flex flex-col gap-1.5 mb-3 max-h-[160px] overflow-y-auto">
@@ -56,16 +56,16 @@ export default function PassCollectModal({ state, dispatch }: Props) {
             </div>
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => dispatch({ type: 'SKIP_PASS_COLLECT' })}
-            className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+            className="min-w-[120px] flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm whitespace-normal break-words">
             🚶 지나가기
           </button>
           <button
             onClick={() => dispatch({ type: 'CONFIRM_PASS_COLLECT', amount: collectAmt })}
             disabled={maxCollect === 0 || collectAmt === 0}
-            className="flex-1 py-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-40 rounded-lg text-sm font-bold">
+            className="min-w-[120px] flex-1 py-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-40 rounded-lg text-sm font-bold whitespace-normal break-words">
             ⚔️ 징집 ({collectAmt}명)
           </button>
         </div>

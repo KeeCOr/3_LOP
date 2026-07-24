@@ -33,8 +33,8 @@ export default function DeployModal({ state, dispatch }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl p-6 min-w-[360px] max-w-[440px] text-white">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-xl p-6 w-full max-w-[440px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white">
         <h2 className="text-xl font-bold text-green-400 mb-1">영토 확보! 병력 배치</h2>
         <div className="bg-green-900/30 border border-green-700/50 rounded-lg px-3 py-2 mb-3 text-xs text-green-300">
           구매 또는 점령으로 이미 배치된 병력은 아래의 <b>현재 주둔</b>에 포함되어 있습니다. 추가 병력은 선택 사항입니다.
@@ -94,7 +94,7 @@ export default function DeployModal({ state, dispatch }: Props) {
 
         <button
           onClick={handleConfirm}
-          className="w-full py-2 bg-green-700 hover:bg-green-600 rounded-lg font-bold">
+          className="w-full min-w-0 py-2 bg-green-700 hover:bg-green-600 rounded-lg font-bold whitespace-normal break-words">
           {totalDeploy === 0 ? '기본 병력만 두고 지나가기' : `총 ${finalGarrison}명으로 주둔 확정`}
         </button>
       </div>

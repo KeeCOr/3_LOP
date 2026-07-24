@@ -15,8 +15,8 @@ export default function StartDeployModal({ state, dispatch }: Props) {
   const takeAmount = piece.troops - deployAmount;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl p-6 w-[320px] text-white">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-xl p-6 w-full max-w-[320px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white">
         <h2 className="text-lg font-bold text-yellow-400 mb-1">⚔️ 출발 전 병력 배치</h2>
         <p className="text-xs text-gray-400 mb-1">출발지에 수비대를 남길 수 있습니다.</p>
         <div className="text-xs text-purple-400 mb-4">✦ {charData.name} — {charData.skill.name}: {charData.skill.desc}</div>
@@ -49,7 +49,7 @@ export default function StartDeployModal({ state, dispatch }: Props) {
 
         <button
           onClick={() => dispatch({ type: 'START_DEPLOY', deployAmount })}
-          className="w-full py-2.5 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-bold text-sm">
+          className="w-full min-w-0 py-2.5 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-bold text-sm whitespace-normal break-words">
           출발! ({takeAmount}명 동행 / {deployAmount}명 수비)
         </button>
       </div>

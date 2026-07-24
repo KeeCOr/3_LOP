@@ -9,6 +9,7 @@ import { CHARACTERS } from '@/lib/gameData';
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
 const primaryActionRow = 'flex flex-wrap gap-2';
+const modalButtonWrap = 'min-w-0 whitespace-normal break-words';
 
 export default function BuildModal({ state, dispatch }: Props) {
   const tileId = state.activeTileAction!;
@@ -55,8 +56,8 @@ export default function BuildModal({ state, dispatch }: Props) {
 
   if (showDeploy && piece) {
     return (
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-        <div className="bg-gray-900 rounded-xl p-6 min-w-[340px] text-white">
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+        <div className="bg-gray-900 rounded-xl p-6 w-full max-w-[380px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white">
           <h2 className="text-xl font-bold text-green-400 mb-1">🏴 병력 배치</h2>
           <p className="text-xs text-gray-400 mb-4">내 영토에 병력을 배치합니다.</p>
           <div className="flex flex-col gap-3 mb-4">
@@ -91,12 +92,12 @@ export default function BuildModal({ state, dispatch }: Props) {
             {' '}/ 잔여: <span className="text-blue-400 font-bold">{piece.troops - totalDeploy}명</span>
           </div>
           <button onClick={handleDeployConfirm} disabled={totalDeploy === 0}
-            className="w-full py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-bold mb-2">
+            className={`w-full py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-bold mb-2 ${modalButtonWrap}`}>
             {totalDeploy === 0 ? '배치 없이 돌아가기' : `${totalDeploy}명 배치 확정`}
           </button>
           {totalDeploy === 0 && (
             <button onClick={() => setShowDeploy(false)}
-              className="w-full py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm">뒤로</button>
+              className={`w-full py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm ${modalButtonWrap}`}>뒤로</button>
           )}
         </div>
       </div>
@@ -109,7 +110,7 @@ export default function BuildModal({ state, dispatch }: Props) {
 
     return (
       <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-50 px-3">
-        <div className="bg-gray-900 rounded-xl p-6 min-w-[360px] max-w-[440px] text-white border border-green-700/50 shadow-2xl">
+        <div className="bg-gray-900 rounded-xl p-6 w-full max-w-[440px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white border border-green-700/50 shadow-2xl">
           <h2 className="text-xl font-bold text-green-400 mb-1">⚔️ 병력 징집</h2>
           <p className="text-xs text-gray-400 mb-4">내 영토의 주둔 병력을 말에 합류시킵니다.</p>
 
@@ -148,13 +149,13 @@ export default function BuildModal({ state, dispatch }: Props) {
               className="w-full" />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => setShowCollect(false)}
-              className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">뒤로</button>
+              className={`min-w-[120px] flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm ${modalButtonWrap}`}>뒤로</button>
             <button
               onClick={() => { dispatch({ type: 'COLLECT_TROOPS', tileId, amount: collectAmt }); setShowCollect(false); }}
               disabled={collectAmt === 0}
-              className="flex-1 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-bold text-sm">
+              className={`min-w-[120px] flex-1 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-40 rounded-lg font-bold text-sm ${modalButtonWrap}`}>
               {collectAmt === 0 ? '징집 안 함' : `${collectAmt}명 징집`}
             </button>
           </div>
@@ -164,8 +165,8 @@ export default function BuildModal({ state, dispatch }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl p-5 min-w-[340px] text-white relative overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-xl p-5 w-full max-w-[420px] max-h-[calc(100vh-1.5rem)] text-white relative overflow-y-auto">
         <h2 className="text-xl font-bold text-yellow-400 mb-2">🏗️ 내 영토</h2>
         <div className="flex gap-2 mb-3 text-xs">
           <div className="flex-1 bg-gray-800 rounded-lg px-2 py-1.5 text-center">
@@ -200,7 +201,7 @@ export default function BuildModal({ state, dispatch }: Props) {
               <button key={type}
                 onClick={() => dispatch({ type: 'BUILD', tileId, buildingType: type })}
                 disabled={isMax || gold < cost}
-                className="flex items-center gap-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 rounded-lg transition-colors text-left">
+                className="flex min-w-0 items-center gap-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 rounded-lg transition-colors text-left">
                 {/* Building visuals: images or emoji fallback */}
                 <div className="flex items-center gap-1 flex-none">
                   {imgs ? (
@@ -218,12 +219,12 @@ export default function BuildModal({ state, dispatch }: Props) {
                   ) : null}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm">
+                  <div className="font-bold text-sm break-words">
                     {isMax ? data.name[2] : data.name[Math.min(level, 2)]}
                     {level > 0 && !isMax && <span className="text-xs text-yellow-400 ml-1">Lv{level}→{level+1}</span>}
                     {level > 0 && isMax && <span className="text-xs text-green-400 ml-1">Lv{level} 최대</span>}
                   </div>
-                  <div className="text-xs text-gray-400">{data.description}</div>
+                  <div className="text-xs text-gray-400 break-words">{data.description}</div>
                 </div>
                 <div className="text-yellow-400 font-bold text-sm flex-none">{isMax ? '최대' : `${cost}골드`}</div>
               </button>
@@ -234,18 +235,18 @@ export default function BuildModal({ state, dispatch }: Props) {
         <div className={primaryActionRow}>
           {isOwnTile && piece && types.length > 0 && (
             <button onClick={() => setShowDeploy(true)}
-              className="min-w-[120px] flex-1 py-2 bg-blue-800 hover:bg-blue-700 border border-blue-600 rounded-lg font-bold text-blue-200 text-sm">
+              className={`min-w-[120px] flex-1 py-2 bg-blue-800 hover:bg-blue-700 border border-blue-600 rounded-lg font-bold text-blue-200 text-sm ${modalButtonWrap}`}>
               🏴 배치
             </button>
           )}
           {isOwnTile && piece && tile.troops > 0 && (
             <button onClick={() => { setShowCollect(true); setCollectAmt(Math.min(tile.troops, maxCollect)); }}
-              className="min-w-[120px] flex-1 py-2 bg-green-800 hover:bg-green-700 border border-green-600 rounded-lg font-bold text-green-200 text-sm">
+              className={`min-w-[120px] flex-1 py-2 bg-green-800 hover:bg-green-700 border border-green-600 rounded-lg font-bold text-green-200 text-sm ${modalButtonWrap}`}>
               ⚔️ 징집 ({tile.troops}명)
             </button>
           )}
           <button onClick={() => dispatch({ type: 'SKIP_BUILD' })}
-            className="min-w-[120px] flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold text-gray-200">
+            className={`min-w-[120px] flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold text-gray-200 ${modalButtonWrap}`}>
             그냥 지나가기
           </button>
         </div>

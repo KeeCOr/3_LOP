@@ -50,8 +50,8 @@ export default function TileActionModal({ state, dispatch }: Props) {
   const tollRisk = getTollRisk(state.player.gold, toll);
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className={`bg-gray-900 rounded-xl p-5 min-w-[320px] max-w-[420px] text-white border-t-2 shadow-2xl ${ownerFc ? ownerFc.border : 'border-gray-700'}`}>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className={`bg-gray-900 rounded-xl p-5 w-full max-w-[420px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white border-t-2 shadow-2xl ${ownerFc ? ownerFc.border : 'border-gray-700'}`}>
         <h2 className={`text-lg font-bold mb-3 ${ownerFc ? ownerFc.text : 'text-yellow-400'}`}>
           {isNeutral ? '🌾 중립 영토' : isStartTile ? '🏰 기본 영토' : '⚔️ 적 영토'}
         </h2>
@@ -148,25 +148,25 @@ export default function TileActionModal({ state, dispatch }: Props) {
         <div className="flex flex-col gap-2">
           <button onClick={() => dispatch({ type: 'CHOOSE_FIGHT', tileId })}
             disabled={piece.troops === 0}
-            className="px-4 py-2 bg-red-700 hover:bg-red-600 disabled:opacity-40 rounded-lg font-bold">
+            className="min-w-0 px-4 py-2 bg-red-700 hover:bg-red-600 disabled:opacity-40 rounded-lg font-bold whitespace-normal break-words">
             ⚔️ 전투 시작 · {battleOutlook.label} ({piece.troops}명 vs {tile.troops}명)
           </button>
           {isNeutral && !isStartTile && (
             <button onClick={() => dispatch({ type: 'CHOOSE_BUY_LAND', tileId })}
               disabled={state.player.gold < landCost}
-              className="px-4 py-2 bg-yellow-700 hover:bg-yellow-600 disabled:opacity-40 rounded-lg font-bold">
+              className="min-w-0 px-4 py-2 bg-yellow-700 hover:bg-yellow-600 disabled:opacity-40 rounded-lg font-bold whitespace-normal break-words">
               💰 골드로 구매 ({landCost}골드)
             </button>
           )}
           {isEnemy && (
             <button onClick={() => dispatch({ type: 'CHOOSE_PAY_TOLL', tileId })}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold">
+              className="min-w-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold whitespace-normal break-words">
               🚶 통행세 납부 · {tollRisk.label} ({toll}골드)
             </button>
           )}
           {(isNeutral || isStartTile) && (
             <button onClick={() => dispatch({ type: 'CHOOSE_PASS' })}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold">
+              className="min-w-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold whitespace-normal break-words">
               🚶 그냥 지나가기
             </button>
           )}

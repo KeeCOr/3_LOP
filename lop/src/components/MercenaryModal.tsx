@@ -14,8 +14,8 @@ export default function MercenaryModal({ state, dispatch }: Props) {
   const canBuy = isPlayerTurn && gold >= MERC_COST && result === null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl p-5 w-[300px] text-white border-t-2 border-orange-500">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-xl p-5 w-full max-w-[300px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white border-t-2 border-orange-500">
         <div className="text-center mb-4">
           <div className="text-3xl mb-1">⚔️</div>
           <h2 className="text-lg font-bold text-orange-400">용병소</h2>
@@ -37,7 +37,7 @@ export default function MercenaryModal({ state, dispatch }: Props) {
             </div>
             <button
               onClick={() => dispatch({ type: 'CLOSE_MERCENARY' })}
-              className="w-full py-2.5 bg-orange-700 hover:bg-orange-600 rounded-lg font-bold text-sm">
+              className="w-full min-w-0 py-2.5 bg-orange-700 hover:bg-orange-600 rounded-lg font-bold text-sm whitespace-normal break-words">
               확인
             </button>
           </>
@@ -54,13 +54,13 @@ export default function MercenaryModal({ state, dispatch }: Props) {
                 <button
                   onClick={() => dispatch({ type: 'BUY_MERCENARY' })}
                   disabled={!canBuy}
-                  className="w-full py-2.5 bg-orange-700 hover:bg-orange-600 disabled:opacity-40 rounded-lg font-bold text-sm">
+                  className="w-full min-w-0 py-2.5 bg-orange-700 hover:bg-orange-600 disabled:opacity-40 rounded-lg font-bold text-sm whitespace-normal break-words">
                   🎲 용병 계약 ({MERC_COST}골드)
                 </button>
               )}
               <button
                 onClick={() => dispatch({ type: 'CLOSE_MERCENARY' })}
-                className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">
+                className="w-full min-w-0 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm whitespace-normal break-words">
                 떠나기
               </button>
             </div>

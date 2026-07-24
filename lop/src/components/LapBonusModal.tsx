@@ -10,8 +10,8 @@ export default function LapBonusModal({ state, dispatch }: Props) {
   const bonus = state.lapBonusAnim!;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-2xl text-white border border-yellow-500/40 shadow-xl w-[320px] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-2xl text-white border border-yellow-500/40 shadow-xl w-full max-w-[320px] max-h-[calc(100vh-1.5rem)] overflow-y-auto">
 
         {/* Lap bonus summary */}
         <div className="p-5 text-center border-b border-gray-700">
@@ -54,7 +54,7 @@ export default function LapBonusModal({ state, dispatch }: Props) {
         <div className="p-4">
           <button
             onClick={() => dispatch({ type: 'CLEAR_LAP_BONUS' })}
-            className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg">
+            className="w-full min-w-0 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg whitespace-normal break-words">
             확인
           </button>
         </div>

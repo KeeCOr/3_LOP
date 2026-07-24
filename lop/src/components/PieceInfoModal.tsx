@@ -19,10 +19,10 @@ export default function PieceInfoModal({ piece, onClose }: Props) {
   const compEntries = (Object.entries(piece.composition) as [TroopType, number][]).filter(([, n]) => (n ?? 0) > 0);
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-gray-900 rounded-xl p-5 min-w-[260px] text-white border border-gray-700" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3" onClick={onClose}>
+      <div className="bg-gray-900 rounded-xl p-5 w-full max-w-[320px] max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white border border-gray-700" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <img src={CHAR_IMAGE[piece.characterType]} alt={charData.name}
               className="w-14 h-16 object-contain flex-none" />
             <div>

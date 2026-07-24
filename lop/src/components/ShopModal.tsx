@@ -24,8 +24,8 @@ export default function ShopModal({ state, dispatch }: Props) {
   function unitCost(t: TroopType) { return Math.ceil(TROOP_DATA[t].price * priceScale); }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl w-[340px] text-white overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-3">
+      <div className="bg-gray-900 rounded-xl w-full max-w-[340px] text-white overflow-hidden flex flex-col max-h-[calc(100vh-1.5rem)]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gray-800 flex-none">
@@ -100,7 +100,7 @@ export default function ShopModal({ state, dispatch }: Props) {
                     <button
                       onClick={() => dispatch({ type: 'BUY_TROOPS', pieceId: activePiece.id, troopType: selectedTroop, amount: safeAmount })}
                       disabled={maxBuy <= 0}
-                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded font-bold text-sm min-w-[64px]">
+                      className="min-w-[64px] px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded font-bold text-sm whitespace-normal break-words">
                       {uc * safeAmount}g
                     </button>
                   </div>
@@ -134,7 +134,7 @@ export default function ShopModal({ state, dispatch }: Props) {
 
         <div className="px-4 pb-4 flex-none border-t border-gray-700 pt-3">
           <button onClick={() => dispatch({ type: 'CLOSE_SHOP' })}
-            className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold">
+            className="w-full min-w-0 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold whitespace-normal break-words">
             닫기
           </button>
         </div>

@@ -23,11 +23,11 @@ export default function BattleModal({ state, dispatch }: Props) {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black/75 bg-cover bg-center z-50"
+      className="fixed inset-0 flex items-center justify-center bg-black/75 bg-cover bg-center z-50 p-3"
       style={{
         backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.58), rgba(0,0,0,0.78)), ${battleResultBackground}`,
       }}>
-      <div className="w-[380px] overflow-hidden rounded-xl border border-amber-700/70 bg-gray-950/88 text-white shadow-[0_18px_60px_rgba(0,0,0,0.62)] backdrop-blur-sm">
+      <div className="w-full max-w-[380px] max-h-[calc(100vh-1.5rem)] overflow-hidden rounded-xl border border-amber-700/70 bg-gray-950/88 text-white shadow-[0_18px_60px_rgba(0,0,0,0.62)] backdrop-blur-sm">
 
         {/* Header */}
         <div className={`px-4 py-3 text-center font-black text-lg ${won ? 'bg-green-900/70 text-green-200' : 'bg-red-900/70 text-red-200'}`}>
@@ -80,7 +80,7 @@ export default function BattleModal({ state, dispatch }: Props) {
         <div className="px-4 pb-4 pt-2">
           {isPlayerTurn && (
             <button onClick={() => dispatch({ type: 'BATTLE_FINISH' })}
-              className="w-full py-2 bg-yellow-500 hover:bg-yellow-400 rounded-lg font-bold text-sm text-black">
+              className="w-full min-w-0 py-2 bg-yellow-500 hover:bg-yellow-400 rounded-lg font-bold text-sm text-black whitespace-normal break-words">
               확인
             </button>
           )}
