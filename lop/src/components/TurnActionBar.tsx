@@ -1,4 +1,4 @@
-import type { GameState, PlayerType } from '@/lib/gameTypes';
+﻿import type { GameState, PlayerType } from '@/lib/gameTypes';
 import { FACTION_COLORS } from '@/lib/factionColors';
 import { getTurnActionInfo } from '@/lib/turnActionInfo.mjs';
 
@@ -31,9 +31,14 @@ export default function TurnActionBar({ state, isAnimating }: { state: GameState
     : state.turnPhase === 'select_piece' || state.turnPhase === 'choose_move_tile' ? 1
     : 2;
   const phases = [
-    { no: '1', title: '주사위', caption: state.diceResult !== null ? `${state.diceResult}칸` : '이동 거리' },
-    { no: '2', title: '이동', caption: state.selectedPieceId ? '말 선택됨' : '말 선택' },
-    { no: '3', title: '행동', caption: info.title },
+    { no: '1', title: '선택 1회', caption: state.diceResult !== null ? `${state.diceResult}칸 이동 준비` : '주사위로 이동 선택' },
+    { no: '2', title: '결과 1회', caption: state.selectedPieceId ? '선택한 말 결과 확인' : '말/타일 변화 확인' },
+    { no: '3', title: '다음 목표 1회', caption: info.title },
+  ];
+  const firstLoopFocus = [
+    { label: '선택', text: state.diceResult === null ? '주사위를 굴려 첫 결정을 만드세요.' : '움직일 말과 목적지를 고르세요.' },
+    { label: '결과', text: state.diceResult !== null ? `${state.diceResult}칸 이동 결과를 바로 확인합니다.` : '골드/병력 변화가 이 줄에 이어집니다.' },
+    { label: '다음 목표', text: info.description },
   ];
 
   return (
@@ -59,6 +64,14 @@ export default function TurnActionBar({ state, isAnimating }: { state: GameState
         </div>
 
         <div className="min-w-0 rounded-md border border-amber-900/50 bg-black/25 px-3 py-2">
+          <div className="mb-2 grid grid-cols-3 gap-1.5">
+            {firstLoopFocus.map((item, index) => (
+              <div key={item.label} className={`min-w-0 rounded-sm border px-2 py-1 ${index === phaseIndex ? 'border-amber-300 bg-amber-500/15 text-amber-50' : 'border-slate-700 bg-slate-950/45 text-slate-300'}`}>
+                <div className="text-[10px] font-black text-amber-300">{item.label}</div>
+                <div className="truncate text-[11px] leading-tight">{item.text}</div>
+              </div>
+            ))}
+          </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className={`text-[11px] font-bold ${fc.text}`}>{playerName(state)} 턴</span>
             <h2 className="text-sm font-black leading-tight text-white">{info.title}</h2>
@@ -74,3 +87,5 @@ export default function TurnActionBar({ state, isAnimating }: { state: GameState
     </aside>
   );
 }
+
+
