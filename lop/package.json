@@ -1,29 +1,57 @@
 {
-    "name":  "lop",
-    "version":  "0.4.22",
-    "main":  "electron/main.js",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "next dev",
-                    "build":  "next build",
-                    "start":  "next start",
-                    "lint":  "eslint"
-                },
-    "dependencies":  {
-                         "next":  "16.2.4",
-                         "react":  "19.2.4",
-                         "react-dom":  "19.2.4"
-                     },
-    "devDependencies":  {
-                            "@tailwindcss/postcss":  "^4",
-                            "@types/node":  "^20",
-                            "@types/react":  "^19",
-                            "@types/react-dom":  "^19",
-                            "electron":  "^41.2.2",
-                            "electron-builder":  "^26.8.1",
-                            "eslint":  "^9",
-                            "eslint-config-next":  "16.2.4",
-                            "tailwindcss":  "^4",
-                            "typescript":  "^5"
-                        }
+  "name": "lop",
+  "version": "0.4.22",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "electron": "electron .",
+    "electron:build": "npm run build && electron-builder --config.win.signAndEditExecutable=false",
+    "electron:build:steam": "npm run build && electron-builder --config.win.signAndEditExecutable=false --config.win.target.0.target=nsis"
+  },
+  "build": {
+    "appId": "com.stoic.lop",
+    "productName": "Lord of Poly",
+    "directories": {
+      "output": "../releases"
+    },
+    "files": [
+      "out/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "portable", "arch": ["x64"] },
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowDirChange": true,
+      "shortcutName": "Lord of Poly",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerLanguages": ["Korean", "English"]
+    }
+  },
+  "dependencies": {
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "electron": "^41.2.2",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
 }
