@@ -3,6 +3,18 @@ const path = require('path');
 const http = require('http');
 const fs = require('fs');
 
+// Steamworks SDK — graceful fallback if running outside Steam
+// TODO: Replace APP_ID (480 = Spacewar test app) with actual Steam App ID before release
+const STEAM_APP_ID = 480;
+let steam = null;
+try {
+  steam = require('steamworks.js');
+  steam.init(STEAM_APP_ID);
+  console.log('[Steam] Initialized, user:', steam.localplayer.getName());
+} catch (e) {
+  console.warn('[Steam] Not available — game runs without Steam features:', e.message);
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript',
@@ -51,6 +63,13 @@ async function createWindow() {
   });
 
   win.loadURL(`http://127.0.0.1:${port}`);
+
+  // F11 — fullscreen toggle
+  win.webContents.on('before-input-event', (_, input) => {
+    if (input.key === 'F11' && input.type === 'keyDown') {
+      win.setFullScreen(!win.isFullScreen());
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
