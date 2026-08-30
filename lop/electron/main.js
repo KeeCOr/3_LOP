@@ -1,10 +1,12 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
 
 // Steamworks SDK — graceful fallback if running outside Steam
 // TODO: Replace APP_ID (480 = Spacewar test app) with actual Steam App ID before release
+const pkg = require('../package.json');
+
 const STEAM_APP_ID = 480;
 let steam = null;
 try {
@@ -14,6 +16,46 @@ try {
 } catch (e) {
   console.warn('[Steam] Not available — game runs without Steam features:', e.message);
 }
+
+// ── Steam IPC 핸들러 ──────────────────────────────────────────────────────────
+
+// 기본 정보
+ipcMain.on('steam:available',    e => { e.returnValue = steam !== null; });
+ipcMain.on('steam:getUserName',  e => { e.returnValue = steam ? steam.localplayer.getName() : null; });
+
+// 클라우드 세이브
+ipcMain.on('steamCloud:isEnabled', e => {
+  e.returnValue = steam !== null && steam.cloud.isCloudEnabled();
+});
+ipcMain.handle('steamCloud:save', async (_, key, data) => {
+  if (!steam) return false;
+  try {
+    steam.cloud.writeFile(key, Buffer.from(JSON.stringify(data), 'utf-8'));
+    return true;
+  } catch (e) { console.error('[SteamCloud] save:', e); return false; }
+});
+ipcMain.handle('steamCloud:load', async (_, key) => {
+  if (!steam) return null;
+  try {
+    const buf = steam.cloud.readFile(key);
+    return JSON.parse(buf.toString('utf-8'));
+  } catch { return null; }
+});
+ipcMain.handle('steamCloud:delete', async (_, key) => {
+  if (!steam) return false;
+  try { steam.cloud.deleteFile(key); return true; }
+  catch { return false; }
+});
+
+// 도전과제
+ipcMain.handle('achievement:unlock', async (_, id) => {
+  if (!steam) return false;
+  try { steam.achievement.activate(id); return true; }
+  catch (e) { console.error('[Achievement] unlock:', e); return false; }
+});
+ipcMain.on('achievement:isUnlocked', (e, id) => {
+  e.returnValue = steam ? steam.achievement.isActivated(id) : false;
+});
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -57,8 +99,9 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
-    title: 'Lord of Poly',
+    title: `Lord of Poly v${pkg.version}`,
     autoHideMenuBar: true,
   });
 
