@@ -10,7 +10,9 @@
     "lint": "eslint",
     "electron": "electron .",
     "electron:build": "npm run build && electron-builder --config.win.signAndEditExecutable=false",
-    "electron:build:steam": "npm run build && electron-builder --config.win.signAndEditExecutable=false --config.win.target.0.target=nsis"
+    "electron:build:steam": "npm run build && electron-builder --config.win.signAndEditExecutable=false --config.win.target.0.target=nsis",
+    "build:steam": "npm run build && electron-builder --config.win.signAndEditExecutable=false",
+    "dist:steam": "npm run build && electron-builder --config.win.signAndEditExecutable=false --config.win.target.0.target=nsis"
   },
   "build": {
     "appId": "com.stoic.lop",
@@ -20,7 +22,8 @@
     },
     "files": [
       "out/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "steam_appid.txt"
     ],
     "win": {
       "target": [
