@@ -3,6 +3,7 @@ import { TILE_DEFINITIONS } from '@/lib/boardLayout';
 import { TROOP_DATA, BUILDING_DATA } from '@/lib/gameData';
 import { FACTION_COLORS, FACTION_NAMES } from '@/lib/factionColors';
 import { getToll, getLapIncome, getLapTroops } from '@/lib/economyUtils';
+import GoldAmount from './GoldAmount';
 import type { PlayerType } from '@/lib/gameTypes';
 import { CHAR_IMAGE } from '@/lib/charImages';
 
@@ -246,13 +247,13 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
                 {/* Toll */}
                 <div className="flex justify-between">
                   <span className="text-gray-400">🏷️ 통행세</span>
-                  <span className="text-orange-300 font-bold">{currentToll}골드</span>
+                  <GoldAmount amount={currentToll} className="text-orange-300 font-bold" />
                 </div>
                 {/* Buy price (neutral only) */}
                 {(tile.owner === 'neutral' || tile.owner === null) && tile.landPrice > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-400">💰 구매가</span>
-                    <span className="text-white font-bold">{tile.landPrice}골드</span>
+                    <GoldAmount amount={tile.landPrice} className="text-white font-bold" />
                   </div>
                 )}
                 {/* Owner */}
@@ -305,7 +306,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
                 {lapIncomeVal > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-400">💰 랩 수입</span>
-                    <span className="text-yellow-300 font-bold">+{lapIncomeVal}골드</span>
+                    <GoldAmount amount={lapIncomeVal} signed className="text-yellow-300 font-bold" />
                   </div>
                 )}
               </div>
@@ -316,7 +317,7 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
             <div className="text-xs text-yellow-400">🎲 랜덤 카드 드로우</div>
           )}
           {tile.type === 'mercenary' && (
-            <div className="text-xs text-orange-400">⚔️ 용병소<br/>400골드 · 랜덤 2~8명</div>
+            <div className="text-xs text-orange-400">⚔️ 용병소<br/><GoldAmount amount={400} /> · 랜덤 2~8명</div>
           )}
         </div>
       )}

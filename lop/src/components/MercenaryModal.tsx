@@ -2,6 +2,7 @@
 import type { GameState } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { TROOP_DATA } from '@/lib/gameData';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -21,7 +22,7 @@ export default function MercenaryModal({ state, dispatch }: Props) {
           <h2 className="text-lg font-bold text-orange-400">용병소</h2>
           {!result && (
             <p className="text-xs text-gray-400 mt-1">
-              {MERC_COST}골드 · 랜덤 병력 2~8명 · 계약 즉시 말에 합류
+              <GoldAmount amount={MERC_COST} /> · 랜덤 병력 2~8명 · 계약 즉시 말에 합류
             </p>
           )}
         </div>
@@ -47,7 +48,7 @@ export default function MercenaryModal({ state, dispatch }: Props) {
         {!result && (
           <>
             <div className="text-xs text-gray-400 text-center mb-3">
-              보유 골드: <span className="text-yellow-300 font-bold">{gold}</span>
+              보유 <GoldAmount amount={gold} className="text-yellow-300 font-bold" />
             </div>
             <div className="flex flex-col gap-2">
               {isPlayerTurn && (
@@ -55,7 +56,7 @@ export default function MercenaryModal({ state, dispatch }: Props) {
                   onClick={() => dispatch({ type: 'BUY_MERCENARY' })}
                   disabled={!canBuy}
                   className="w-full min-w-0 py-2.5 bg-orange-700 hover:bg-orange-600 disabled:opacity-40 rounded-lg font-bold text-sm whitespace-normal break-words">
-                  🎲 용병 계약 ({MERC_COST}골드)
+                  🎲 용병 계약 (<GoldAmount amount={MERC_COST} />)
                 </button>
               )}
               <button

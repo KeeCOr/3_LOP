@@ -2,6 +2,7 @@
 import type { GameState, PlayerType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { getToll } from '@/lib/economyUtils';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -29,9 +30,9 @@ export default function ForcedSellModal({ state, dispatch }: Props) {
       <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md max-h-[calc(100vh-1.5rem)] overflow-y-auto text-white">
         <h2 className="text-xl font-bold text-red-400 mb-1">💸 통행세 부족!</h2>
         <p className="text-gray-300 text-sm mb-4">
-          필요: <span className="text-red-300 font-bold">{toll}골드</span>
-          {' '}/ 보유: <span className={`font-bold ${canPay ? 'text-green-300' : 'text-yellow-300'}`}>{gold}골드</span>
-          {!canPay && <span className="text-gray-400"> (부족: {toll - gold}골드)</span>}
+          필요: <GoldAmount amount={toll} className="text-red-300 font-bold" />
+          {' '}/ 보유: <GoldAmount amount={gold} className={`font-bold ${canPay ? 'text-green-300' : 'text-yellow-300'}`} />
+          {!canPay && <span className="text-gray-400"> (부족: <GoldAmount amount={toll - gold} />)</span>}
         </p>
 
         <div className="mb-4">
@@ -53,7 +54,7 @@ export default function ForcedSellModal({ state, dispatch }: Props) {
                     <button
                       onClick={() => dispatch({ type: 'SELL_LAND', tileId: t.id })}
                       className="shrink-0 px-3 py-1 bg-orange-700 hover:bg-orange-600 rounded text-sm font-bold whitespace-normal break-words">
-                      +{sellPrice}골드
+                      <GoldAmount amount={sellPrice} signed />
                     </button>
                   </div>
                 );
@@ -66,7 +67,7 @@ export default function ForcedSellModal({ state, dispatch }: Props) {
           onClick={() => dispatch({ type: 'CONFIRM_FORCED_SELL' })}
           disabled={!canPay && ownedLands.length > 0}
           className="w-full min-w-0 py-2 bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg font-bold whitespace-normal break-words">
-          {canPay ? `통행세 ${toll}골드 납부` : '납부 불가 (파산 처리)'}
+          {canPay ? <>통행세 <GoldAmount amount={toll} /> 납부</> : '납부 불가 (파산 처리)'}
         </button>
         {!canPay && ownedLands.length === 0 && (
           <button

@@ -4,6 +4,7 @@ import type { GameState, TroopType } from '@/lib/gameTypes';
 import type { CharacterType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { CHARACTERS, TROOP_DATA, BUYABLE_TROOPS, nextHireCost, TROOP_PRICE_SCALE } from '@/lib/gameData';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -34,7 +35,7 @@ export default function ShopModal({ state, dispatch }: Props) {
             <div className="text-xs text-purple-400">✦ {charData.skill.name}: {charData.skill.desc}</div>
           </div>
           <div className="text-right">
-            <div className="text-yellow-400 font-bold">{gold}골드</div>
+            <GoldAmount amount={gold} className="justify-end text-yellow-400 font-bold" />
             <div className="text-xs text-gray-400">{activePiece.troops} / {maxTroops}명</div>
           </div>
         </div>
@@ -67,7 +68,7 @@ export default function ShopModal({ state, dispatch }: Props) {
                       ${isSelected ? 'border-blue-400 bg-blue-900/50' : 'border-gray-600 bg-gray-800 hover:border-gray-500'}`}>
                     <span className="text-xl">{td.emoji}</span>
                     <span className="text-xs font-bold">{td.name}</span>
-                    <span className="text-xs text-yellow-400">{unitCost(t)}g</span>
+                    <GoldAmount amount={unitCost(t)} className="text-xs text-yellow-400" />
                   </button>
                 );
               })}
@@ -101,7 +102,7 @@ export default function ShopModal({ state, dispatch }: Props) {
                       onClick={() => dispatch({ type: 'BUY_TROOPS', pieceId: activePiece.id, troopType: selectedTroop, amount: safeAmount })}
                       disabled={maxBuy <= 0}
                       className="min-w-[64px] px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded font-bold text-sm whitespace-normal break-words">
-                      {uc * safeAmount}g
+                      <GoldAmount amount={uc * safeAmount} />
                     </button>
                   </div>
                 </div>
@@ -113,7 +114,7 @@ export default function ShopModal({ state, dispatch }: Props) {
           <div className="px-4 pb-4 border-t border-gray-700 pt-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">말 고용</div>
-              <div className="text-xs text-yellow-400">{hireCost}골드</div>
+              <GoldAmount amount={hireCost} className="text-xs text-yellow-400" />
             </div>
             <div className="grid grid-cols-4 gap-1.5">
               {chars.map(c => {

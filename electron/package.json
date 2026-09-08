@@ -1,6 +1,6 @@
 {
   "name": "lop",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "lop",
   "main": "main.js",
   "scripts": {
@@ -25,7 +25,7 @@
       "forceCodeSigning": false
     },
     "portable": {
-      "artifactName": "LOP_v0.5.0_portable.exe"
+      "artifactName": "LOP_v${version}_portable.exe"
     },
     "files": [
       "main.js",

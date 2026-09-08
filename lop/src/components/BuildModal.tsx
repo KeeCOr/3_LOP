@@ -5,6 +5,7 @@ import type { GameAction } from '@/lib/gameReducer';
 import { BUILDING_DATA, TROOP_DATA } from '@/lib/gameData';
 import { getBuildCost, getToll, getLapTroops, getLapIncome } from '@/lib/economyUtils';
 import { CHARACTERS } from '@/lib/gameData';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -171,7 +172,7 @@ export default function BuildModal({ state, dispatch }: Props) {
         <div className="flex gap-2 mb-3 text-xs">
           <div className="flex-1 bg-gray-800 rounded-lg px-2 py-1.5 text-center">
             <div className="text-gray-400">통행세</div>
-            <div className="text-orange-300 font-bold">{getToll(tile, false, state.lapCount)}골드</div>
+            <GoldAmount amount={getToll(tile, false, state.lapCount)} className="justify-center text-orange-300 font-bold" />
           </div>
           <div className="flex-1 bg-gray-800 rounded-lg px-2 py-1.5 text-center">
             <div className="text-gray-400">랩 생산</div>
@@ -180,7 +181,7 @@ export default function BuildModal({ state, dispatch }: Props) {
           {getLapIncome(tile) > 0 && (
             <div className="flex-1 bg-gray-800 rounded-lg px-2 py-1.5 text-center">
               <div className="text-gray-400">랩 수입</div>
-              <div className="text-yellow-300 font-bold">{getLapIncome(tile)}골드</div>
+              <GoldAmount amount={getLapIncome(tile)} className="justify-center text-yellow-300 font-bold" />
             </div>
           )}
         </div>
@@ -226,7 +227,7 @@ export default function BuildModal({ state, dispatch }: Props) {
                   </div>
                   <div className="text-xs text-gray-400 break-words">{data.description}</div>
                 </div>
-                <div className="text-yellow-400 font-bold text-sm flex-none">{isMax ? '최대' : `${cost}골드`}</div>
+                <div className="text-yellow-400 font-bold text-sm flex-none">{isMax ? '최대' : <GoldAmount amount={cost} />}</div>
               </button>
             );
           })}

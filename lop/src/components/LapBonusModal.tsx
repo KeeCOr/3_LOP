@@ -3,6 +3,7 @@ import type { GameState, TroopType } from '@/lib/gameTypes';
 import type { GameAction } from '@/lib/gameReducer';
 import { TROOP_DATA } from '@/lib/gameData';
 import { TILE_DEFINITIONS } from '@/lib/boardLayout';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -19,8 +20,8 @@ export default function LapBonusModal({ state, dispatch }: Props) {
           <h2 className="text-lg font-bold text-yellow-400 mb-3">출발점 통과!</h2>
           <div className="mb-2">
             <div className="bg-yellow-900/30 rounded-lg px-3 py-2 text-center">
-              <div className="text-xs text-gray-400">골드</div>
-              <div className="text-yellow-300 font-bold text-lg">+{bonus.gold} 💰</div>
+              <div className="text-xs text-gray-400">보상</div>
+              <GoldAmount amount={bonus.gold} signed className="justify-center text-yellow-300 font-bold text-lg" />
             </div>
           </div>
           {bonus.tileProduction > 0 && (

@@ -24,6 +24,7 @@ import MercenaryModal from './MercenaryModal';
 import StopAtTileModal from './StopAtTileModal';
 import TileDetailPanel from './TileDetailPanel';
 import TurnActionBar from './TurnActionBar';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -77,8 +78,8 @@ function CenterTurnSummary({ state, isAnimating }: { state: GameState; isAnimati
           <div className="truncate font-black text-white">{currentPiece ? `${currentPiece.troops}명` : '-'}</div>
         </div>
         <div className="rounded-sm border border-amber-900/60 bg-black/35 px-2 py-2">
-          <div className="text-[10px] text-amber-500/80">보유 골드</div>
-          <div className="font-black text-yellow-300">{state.player.gold}G</div>
+          <div className="text-[10px] text-amber-500/80">보유</div>
+          <GoldAmount amount={state.player.gold} className="justify-center font-black text-yellow-300" />
         </div>
       </div>
 
@@ -453,13 +454,13 @@ const [moveNotif, setMoveNotif] = useState<{ name: string; char: string; dest: s
         <div className="flex-none px-3 py-2 bg-red-950/80 border-t-2 border-red-700 flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-0">
             <span className="text-red-300 font-bold text-sm">통행료 부족 </span>
-            <span className="text-xs text-gray-300">필요 <b className="text-red-300">{forcedSellToll}G</b> / 보유 <b className="text-yellow-300">{state.player.gold}G</b></span>
-            {!canPayToll && <span className="text-xs text-gray-500 ml-1">(부족 {forcedSellToll - state.player.gold}G)</span>}
+            <span className="text-xs text-gray-300">필요 <GoldAmount amount={forcedSellToll} className="text-red-300 font-bold" /> / 보유 <GoldAmount amount={state.player.gold} className="text-yellow-300 font-bold" /></span>
+            {!canPayToll && <span className="text-xs text-gray-500 ml-1">(부족 <GoldAmount amount={forcedSellToll - state.player.gold} />)</span>}
           </div>
           {canPayToll && (
             <button onClick={() => dispatch({ type: 'CONFIRM_FORCED_SELL' })}
               className="px-3 py-1.5 bg-green-700 hover:bg-green-600 rounded-lg text-sm font-bold shrink-0">
-              {forcedSellToll}G 납부
+              <GoldAmount amount={forcedSellToll} /> 납부
             </button>
           )}
           {!canPayToll && ownedSellableLands.length === 0 && (

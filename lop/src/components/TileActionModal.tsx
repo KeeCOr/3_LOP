@@ -3,6 +3,7 @@ import type { GameAction } from '@/lib/gameReducer';
 import { getToll, getLapTroops } from '@/lib/economyUtils';
 import { TROOP_DATA, LAP_LAND_PRODUCTION } from '@/lib/gameData';
 import { FACTION_COLORS } from '@/lib/factionColors';
+import GoldAmount from './GoldAmount';
 
 interface Props { state: GameState; dispatch: React.Dispatch<GameAction>; }
 
@@ -23,12 +24,12 @@ function getBattleOutlook(attacker: number, defender: number) {
 function getTollRisk(gold: number, toll: number) {
   const balance = gold - toll;
   if (balance < 0) {
-    return { label: '부족', detail: `${Math.abs(balance)}골드 부족`, className: 'border-red-600 bg-red-950/45 text-red-100' };
+    return { label: '부족', amount: Math.abs(balance), detail: '부족', className: 'border-red-600 bg-red-950/45 text-red-100' };
   }
   if (balance <= 300) {
-    return { label: '주의', detail: `납부 후 ${balance}골드`, className: 'border-yellow-600 bg-yellow-950/45 text-yellow-100' };
+    return { label: '주의', amount: balance, detail: '납부 후', className: 'border-yellow-600 bg-yellow-950/45 text-yellow-100' };
   }
-  return { label: '여유', detail: `납부 후 ${balance}골드`, className: 'border-sky-600 bg-sky-950/45 text-sky-100' };
+  return { label: '여유', amount: balance, detail: '납부 후', className: 'border-sky-600 bg-sky-950/45 text-sky-100' };
 }
 
 export default function TileActionModal({ state, dispatch }: Props) {
@@ -60,7 +61,7 @@ export default function TileActionModal({ state, dispatch }: Props) {
         <div className="bg-gray-800 rounded-lg p-3 mb-3 flex gap-3 text-xs">
           <div className="flex-1 text-center">
             <div className="text-gray-400 mb-0.5">통행세</div>
-            <div className="text-orange-300 font-bold">{toll}골드</div>
+            <GoldAmount amount={toll} className="justify-center text-orange-300 font-bold" />
           </div>
           <div className="flex-1 text-center">
             <div className="text-gray-400 mb-0.5">랩 생산</div>
@@ -120,18 +121,18 @@ export default function TileActionModal({ state, dispatch }: Props) {
                 <span className="text-sm font-black">{tollRisk.label}</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-xs">
-                <span>통행세 <b className="text-white">{toll}골드</b></span>
-                <span>보유 <b className="text-white">{state.player.gold}골드</b></span>
+                <span>통행세 <GoldAmount amount={toll} className="text-white font-bold" /></span>
+                <span>보유 <GoldAmount amount={state.player.gold} className="text-white font-bold" /></span>
               </div>
-              <p className="mt-1 text-[11px] leading-snug text-gray-300">{tollRisk.detail}</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-300">{tollRisk.detail} <GoldAmount amount={tollRisk.amount} /></p>
             </div>
           )}
 
           {isNeutral && !isStartTile && (
             <div className={`rounded-lg border px-3 py-2 ${state.player.gold >= landCost ? 'border-yellow-600 bg-yellow-950/35 text-yellow-100' : 'border-red-600 bg-red-950/45 text-red-100'}`}>
               <div className="flex items-center justify-between text-xs">
-                <span>구매 비용 <b className="text-white">{landCost}골드</b></span>
-                <span>보유 <b className="text-white">{state.player.gold}골드</b></span>
+                <span>구매 비용 <GoldAmount amount={landCost} className="text-white font-bold" /></span>
+                <span>보유 <GoldAmount amount={state.player.gold} className="text-white font-bold" /></span>
               </div>
               <p className="mt-1 text-[11px] leading-snug text-gray-300">
                 구매하면 바로 병력 배치 단계로 이어집니다.
@@ -141,8 +142,8 @@ export default function TileActionModal({ state, dispatch }: Props) {
         </div>
 
         <div className="text-gray-300 mb-3 text-sm">
-          {isNeutral && !isStartTile && <div>구매 비용: <span className="text-yellow-300 font-bold">{landCost}골드</span> (보유: {state.player.gold}골드)</div>}
-          {isEnemy && <div>통행세 납부: <span className="text-orange-300 font-bold">{toll}골드</span></div>}
+          {isNeutral && !isStartTile && <div>구매 비용: <GoldAmount amount={landCost} className="text-yellow-300 font-bold" /> (보유: <GoldAmount amount={state.player.gold} />)</div>}
+          {isEnemy && <div>통행세 납부: <GoldAmount amount={toll} className="text-orange-300 font-bold" /></div>}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -155,13 +156,13 @@ export default function TileActionModal({ state, dispatch }: Props) {
             <button onClick={() => dispatch({ type: 'CHOOSE_BUY_LAND', tileId })}
               disabled={state.player.gold < landCost}
               className="min-w-0 px-4 py-2 bg-yellow-700 hover:bg-yellow-600 disabled:opacity-40 rounded-lg font-bold whitespace-normal break-words">
-              💰 골드로 구매 ({landCost}골드)
+              골드로 구매 (<GoldAmount amount={landCost} />)
             </button>
           )}
           {isEnemy && (
             <button onClick={() => dispatch({ type: 'CHOOSE_PAY_TOLL', tileId })}
               className="min-w-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold whitespace-normal break-words">
-              🚶 통행세 납부 · {tollRisk.label} ({toll}골드)
+              🚶 통행세 납부 · {tollRisk.label} (<GoldAmount amount={toll} />)
             </button>
           )}
           {(isNeutral || isStartTile) && (
