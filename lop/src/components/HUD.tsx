@@ -67,7 +67,7 @@ export default function HUD({ state }: { state: GameState }) {
                     {isCurrent && <span className="rounded-sm bg-amber-300 px-1.5 text-[9px] font-black text-slate-950">TURN</span>}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
-                    <span className="font-black text-amber-200">● {ps.gold}G</span>
+                    <span className="inline-flex items-center gap-1 font-black text-amber-200"><img src="/assets/ui/resource-icons/gold.png" alt="골드" className="h-4 w-4 object-contain" />{ps.gold}</span>
                     <span className="text-sky-100/90">영토 {lands}</span>
                     <span className="text-stone-100/90">병력 {troops}</span>
                     {activeEffectCount(ps) > 0 && (
