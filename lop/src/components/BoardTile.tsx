@@ -211,11 +211,11 @@ export default function BoardTile({ tile, pieces, isActive, isMoving, isSelectab
               <div className={`absolute bottom-0 left-0 right-0 rounded-sm py-[1px] ${FACTION_COLORS[p.owner].badge}`}
                 style={{ textShadow: '0 0 2px #000' }}>
                 <div className="text-[10px] font-black text-center leading-none">{p.troops}명</div>
-                <div className="flex flex-wrap justify-center gap-x-[2px] leading-none">
+                <div className="flex flex-wrap justify-center gap-x-[2px] gap-y-[1px] leading-tight">
                   {(Object.entries(p.composition) as [TroopType, number][])
                     .filter(([, n]) => (n ?? 0) > 0)
                     .map(([t, n]) => (
-                      <span key={t} className="text-[7px]">{TROOP_DATA[t].emoji}{n}</span>
+                      <span key={t} className="text-[11px] leading-tight">{TROOP_DATA[t].emoji}{n}</span>
                     ))}
                 </div>
               </div>

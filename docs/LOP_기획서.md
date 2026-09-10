@@ -1,7 +1,7 @@
 # LOP 기획서 (Game Design Document)
 
-> 현재 문서 기준 버전: <span style="color:#e53935">0.7.0</span>  
-> 최종 갱신: <span style="color:#e53935">2026-09-08</span>
+> 현재 문서 기준 버전: <span style="color:#fb8c00">0.7.1</span>
+> 최종 갱신: <span style="color:#fb8c00">2026-09-10</span>
 
 ![LOP 플레이 미리보기](LOP_gameplay_preview.png)
 
@@ -196,7 +196,7 @@ cd C:/Development/3_LOP/lop && npm run electron
 cd C:/Development/3_LOP/lop && npm run electron:build:steam
 ```
 
-**출력**: `release/LOP_v<span style="color:#e53935">0.7.0</span>_portable.exe`
+**출력**: `release/LOP_v<span style="color:#fb8c00">0.7.1</span>_portable.exe`
 
 ---
 
@@ -233,6 +233,13 @@ cd C:/Development/3_LOP/lop && npm run electron:build:steam
 
 `GoldAmount` 공통 컴포넌트로 보유량, 구매·건설·고용 비용, 통행세, 강제 매각, 랩 보상, 보드 타일 툴팁과 버튼의 골드 수치를 모두 전용 골드 아이콘과 숫자 묶음으로 표시한다. 아이콘은 보조기술에서 중복으로 읽히지 않고, 금액 묶음에는 `골드 {금액}` 접근성 이름을 제공한다. 설명·로그·튜토리얼 문장의 자원 이름은 문맥을 위해 유지한다.
 
+## 2026-09-10 · 보드 타일 가독성 및 빌드 신뢰성 패치 (v0.7.1)
+
+- 보드 타일 병력 구성 카운터 글자 크기를 7px에서 읽기 쉬운 11px로 키우고, 줄 높이를 압축하며 2행 구성의 가로·세로 간격을 명시적으로 지정했다. 중앙 정렬 줄바꿈은 그대로 유지한다.
+- 한글 UI 폰트 스택 우선순위를 Pretendard, Noto Sans KR, Malgun Gothic 순으로 지정한 뒤 범용 폴백을 잇도록 정리했다.
+- 구성 가독성, 2행 간격, 한글 폰트 폴백, 외곽 Electron portable 실행파일 이름/엔트리포인트의 정합성을 검증하는 테스트를 추가했다.
+- 릴리스 기준 경로는 변함없이 내부 앱 빌드(`C:/Development/3_LOP/lop`) 이후 외곽 래퍼 패키징(`C:/Development/3_LOP/electron`) 순서이며, portable 파일명 규칙도 `LOP_v${version}_portable.exe`를 유지한다.
+
 ## 오디오 시스템 (2026-09-08 업데이트)
 
 - **BGM**: Kenney Music Loops의 CC0 OGG 루프 1곡
@@ -248,6 +255,7 @@ cd C:/Development/3_LOP/lop && npm run electron:build:steam
 
 | 날짜 | 내용 |
 |------|------|
+| 2026-09-10 | 보드 타일 병력 구성 가독성(11px, 2행 간격), 한글 폰트 폴백(Pretendard/Noto Sans KR/Malgun Gothic), 관련 테스트 추가(v0.7.1) |
 | 2026-09-08 | 전체 골드 수치 아이콘화(v0.7.0), 오디오 시스템(BGM/SFX) 반영 |
 | 2026-09-07 | 자원 HUD 아이콘화(v0.5.0) |
 | 2026-09-03 | Steam 통합, 업적 목록, 플랫폼 배포 섹션 추가; 전체 GDD 구조 개편 |
