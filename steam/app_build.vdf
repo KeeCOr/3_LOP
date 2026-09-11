@@ -1,0 +1,23 @@
+"AppBuild"
+{
+    "AppID"         "REPLACE_WITH_REAL_APP_ID"
+    "Desc"          "Lord of Poly v1.0.1"
+    "BuildOutput"   "../../steamcmd_output/"
+    "ContentRoot"   "..\lop\out\"
+    "SetLive"       ""
+    "Preview"       "0"
+
+    "Depots"
+    {
+        "REPLACE_WITH_DEPOT_ID"
+        {
+            "FileMapping"
+            {
+                "LocalPath"     "*"
+                "DepotPath"     "."
+                "recursive"     "1"
+            }
+            "FileExclusion"     "*.map"
+        }
+    }
+}

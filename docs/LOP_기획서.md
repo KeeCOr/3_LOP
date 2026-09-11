@@ -1,7 +1,7 @@
 # LOP 기획서 (Game Design Document)
 
-> 현재 문서 기준 버전: <span style="color:#fb8c00">0.7.1</span>
-> 최종 갱신: <span style="color:#fb8c00">2026-09-10</span>
+> 현재 문서 기준 버전: <span style="color:#fbc02d">1.0.1</span>
+> 최종 갱신: <span style="color:#fbc02d">2026-09-11</span>
 
 ![LOP 플레이 미리보기](LOP_gameplay_preview.png)
 
@@ -196,7 +196,7 @@ cd C:/Development/3_LOP/lop && npm run electron
 cd C:/Development/3_LOP/lop && npm run electron:build:steam
 ```
 
-**출력**: `release/LOP_v<span style="color:#fb8c00">0.7.1</span>_portable.exe`
+**출력**: `release/LOP_v<span style="color:#fbc02d">1.0.1</span>_portable.exe`
 
 ---
 
@@ -240,6 +240,14 @@ cd C:/Development/3_LOP/lop && npm run electron:build:steam
 - 구성 가독성, 2행 간격, 한글 폰트 폴백, 외곽 Electron portable 실행파일 이름/엔트리포인트의 정합성을 검증하는 테스트를 추가했다.
 - 릴리스 기준 경로는 변함없이 내부 앱 빌드(`C:/Development/3_LOP/lop`) 이후 외곽 래퍼 패키징(`C:/Development/3_LOP/electron`) 순서이며, portable 파일명 규칙도 `LOP_v${version}_portable.exe`를 유지한다.
 
+## 2026-09-11 · 저장소 정규화 및 Steam 릴리스 준비 통합 (v1.0.1)
+
+- 로컬 보드 타일 가독성 패치(v0.7.1)와 원격 Steam 릴리스 준비 작업(아이콘, SteamCMD 빌드 스크립트, v1.0.0)을 병합했다. 두 작업 모두 유실 없이 반영됐으며, 통합 결과물의 버전은 `lop/package.json`, `lop/package-lock.json`, `electron/package.json`, `electron/package-lock.json`에 걸쳐 1.0.1로 정렬했다.
+- `steam/app_build.vdf`(SteamCMD 빌드 설정)를 저장소에 병합하고 설명 문구를 현재 버전(v1.0.1)에 맞춰 갱신했다.
+- `electron/node_modules/`(5,737개 파일)는 이미 `.gitignore`로 제외 대상이었으나 이전 커밋에서 실수로 추적되고 있던 상태였다. 이번 통합에서 Git 추적을 해제해 저장소 크기와 diff 노이즈를 정리했다. 설치된 의존성 자체는 변경되지 않았다.
+- 보드 타일 가독성 패치(11px 카운터, 2행 간격, 한글 폰트 폴백)는 이번 통합에서 그대로 보존됐다.
+- `release_tmp_0_4_20_titlefix/win-unpacked/`(71개 파일, 과거 패키징 중간 산출물)는 현재 소스·빌드 설정 어디에서도 참조되지 않는 것으로 확인되어 Git 추적을 해제하고 `.gitignore`에 등록했다.
+
 ## 오디오 시스템 (2026-09-08 업데이트)
 
 - **BGM**: Kenney Music Loops의 CC0 OGG 루프 1곡
@@ -255,6 +263,7 @@ cd C:/Development/3_LOP/lop && npm run electron:build:steam
 
 | 날짜 | 내용 |
 |------|------|
+| 2026-09-11 | 저장소 정규화: 로컬 가독성 패치(v0.7.1) + 원격 Steam 릴리스 준비(v1.0.0, 아이콘/SteamCMD VDF) 통합, `electron/node_modules` 추적 해제, `release_tmp_0_4_20_titlefix/win-unpacked`(미참조 과거 산출물 71개 파일) 추적 해제, 버전 1.0.1로 정렬 |
 | 2026-09-10 | 보드 타일 병력 구성 가독성(11px, 2행 간격), 한글 폰트 폴백(Pretendard/Noto Sans KR/Malgun Gothic), 관련 테스트 추가(v0.7.1) |
 | 2026-09-08 | 전체 골드 수치 아이콘화(v0.7.0), 오디오 시스템(BGM/SFX) 반영 |
 | 2026-09-07 | 자원 HUD 아이콘화(v0.5.0) |

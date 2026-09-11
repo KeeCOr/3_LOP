@@ -1,6 +1,7 @@
 releases/
 *.exe
 release/win-unpacked/
+release_tmp_0_4_20_titlefix/win-unpacked/
 electron/node_modules/
 node_modules/
 
