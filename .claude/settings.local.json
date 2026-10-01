@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(cp -r /c/Development/3_LOP/lop/out /c/temp/pioneer-electron/dist)",
+      "Bash(sed -i 's/\"\"version\"\": \"\"0.3.6\"\"/\"\"version\"\": \"\"0.3.7\"\"/' /c/Development/3_LOP/lop/package.json)",
+      "Bash(sed -i 's/\"\"version\"\": \"\"0.3.6\"\"/\"\"version\"\": \"\"0.3.7\"\"/; s/lop_v0.3.6_portable/lop_v0.3.7_portable/' /c/temp/pioneer-electron/package.json)",
+      "Bash(magick -version)",
+      "Bash(convert -version)",
+      "Bash(node -e \"console.log\\(''node ok''\\)\")",
+      "Bash(node:*)",
+      "Bash(sed -i 's/\"\"version\"\": \"\"0.3.7\"\"/\"\"version\"\": \"\"0.3.8\"\"/' /c/Development/3_LOP/lop/package.json)",
+      "Bash(sed -i 's/\"\"version\"\": \"\"0.3.7\"\"/\"\"version\"\": \"\"0.3.8\"\"/; s/lop_v0.3.7_portable/lop_v0.3.8_portable/' /c/temp/pioneer-electron/package.json)",
+      "Bash(grep -v \"^.*//.*$\")",
+      "Bash(cp:*)",
+      "Bash(ls:*)",
+      "Bash(find /c/Development/3_LOP -name *.sh -o -name build.bat -o -name Makefile)",
+      "Bash(find /c/Development/3_LOP/lop/src -name EventCard* -o -name *event*)",
+      "Bash(grep -n \"COLLECT_TROOPS\\\\|징집\" /c/Development/3_LOP/lop/src/components/*.tsx)",
+      "Bash(cp -r /c/Development/3_LOP/lop/out /c/Development/3_LOP/electron/dist)",
+      "Bash(cp -r /c/Development/3_LOP/lop/out/player /c/Development/3_LOP/electron/dist/)",
+      "Bash(cd:*)",
+      "Bash(py:*)",
+      "Bash(robocopy /c/Development/3_LOP/lop/out /c/Development/3_LOP/electron/dist /MIR /NFL /NDL /NJH /NJS /nc /ns /np)",
+      "Bash(robocopy \"C:\\\\Development\\\\3_LOP\\\\lop\\\\out\" \"C:\\\\Development\\\\3_LOP\\\\electron\\\\dist\" /MIR /NFL /NDL /NJH /NJS /nc /ns /np)",
+      "Bash(cmd.exe /c \"robocopy C:\\\\Development\\\\3_LOP\\\\lop\\\\out C:\\\\Development\\\\3_LOP\\\\electron\\\\dist /MIR /NFL /NDL /NJH /NJS /nc /ns /np & cd C:\\\\Development\\\\3_LOP\\\\electron & npx electron-builder --win --x64\")",
+      "Bash(cmd.exe /c \"robocopy C:\\\\\\\\Development\\\\\\\\3_LOP\\\\\\\\lop\\\\\\\\out C:\\\\\\\\Development\\\\\\\\3_LOP\\\\\\\\electron\\\\\\\\dist /MIR /NFL /NDL /NJH /NJS /nc /ns /np\")",
+      "Bash(cmd.exe /c \"robocopy C:\\\\Development\\\\3_LOP\\\\lop\\\\out C:\\\\Development\\\\3_LOP\\\\electron\\\\dist /MIR /NFL /NDL /NJH /NJS /nc /ns /np\")",
+      "Bash(tasklist)",
+      "Bash(cmd.exe /c \"robocopy lop\\\\out electron\\\\dist /E /MIR\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd /c \"robocopy C:\\\\\\\\Development\\\\\\\\3_LOP\\\\\\\\lop\\\\\\\\out C:\\\\\\\\Development\\\\\\\\3_LOP\\\\\\\\electron\\\\\\\\dist /MIR /NFL /NDL /NJH /NJS /nc /ns /np & echo DONE\")",
+      "Bash(cmd /c \"robocopy C:\\\\Development\\\\3_LOP\\\\lop\\\\out C:\\\\Development\\\\3_LOP\\\\electron\\\\dist /MIR /NFL /NDL /NJH /NJS /nc /ns /np\")",
+      "Bash(cmd /c \"robocopy C:\\\\Development\\\\3_LOP\\\\lop\\\\out C:\\\\Development\\\\3_LOP\\\\electron\\\\dist /MIR\")",
+      "Read(//c/Development/2_Pioneer/**)",
+      "Read(//c/Development/**)",
+      "Skill(update-config)",
+      "Bash(where jq:*)",
+      "Bash(echo 'not in PATH' ls /usr/bin/jq /c/Program*/jq* /c/Windows/System32/jq*)"
+    ]
+  }
+}
