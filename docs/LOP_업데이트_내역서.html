@@ -1,0 +1,36 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOP 업데이트 내역서</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65;max-width:980px;margin:0 auto;padding:40px 24px;color:#20242a;background:#fafafa}h1{font-size:34px}h2{font-size:24px;margin-top:34px;border-bottom:1px solid #ddd;padding-bottom:6px}h3{font-size:18px}p,li{font-size:15px}li{margin:5px 0}table{border-collapse:collapse;width:100%;margin:12px 0}td{border:1px solid #ddd;padding:8px 12px;vertical-align:top}pre{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;white-space:pre-wrap}code{background:#fff;border:1px solid #ddd;border-radius:4px;padding:1px 4px}img{max-width:100%;height:auto;border-radius:8px;object-fit:contain}blockquote{border-left:4px solid #ddd;margin:0 0 16px;padding:8px 16px;background:#fff;color:#555}</style>
+</head>
+<body>
+<h1>LOP 업데이트 내역서</h1>
+<h2>2026-09-21 장기 목표·이번 턴 목표 분리</h2>
+<ul>
+<li>격차: 장기 승리 목표가 상시 보이지 않고 현재 단계 설명이 중복됐다.</li>
+<li>예시 화면: <code>docs/design-references/2026-09-21-long-current-objective-strip.png</code></li>
+<li>적용: 상대 전원 파산/남은 경쟁자와 이번 턴 행동을 분리하고 중복 설명 블록을 제거했다.</li>
+<li>검증: 소스 테스트 32/32, Next.js 빌드, Electron 포터블 패키징, UI detector 통과.</li>
+<li>미검증: 실제 전투 화면 수동 QA. 복수 lockfile과 package author 누락 경고가 남아 있다.</li>
+<li>다음 후보: 골드·병력·영토 변화의 즉시 결과 요약.</li>
+</ul>
+<h2>2026-07-02 문서 신뢰도 정리</h2>
+<ul>
+<li>현재-facing `LOP_기획서.md/html`의 mojibake를 제거하고 읽히는 UTF-8 GDD로 재작성했다.</li>
+<li>보드게임 전략 페르소나가 이해해야 하는 문제 정의, 핵심 루프, MVP 가설, 구현 상태, 남은 리스크를 다시 정리했다.</li>
+<li>런타임 코드는 변경하지 않았다. 이번 배치는 문서 신뢰도 회복 전용이다.</li>
+<h2>2026-06-30 첫 세션 선택 체인 확인</h2>
+<li>시작 흐름은 목표 확인 -&gt; 세팅 -&gt; 캐릭터 공개 -&gt; 보드 루프로 이어지는 것으로 확인됐다.</li>
+<li>chance-card 결과는 즉시 결과와 다음 판단 이유를 설명하도록 보강됐다.</li>
+<li>데스크톱 래퍼 경로는 `lop` 빌드 후 `electron` 패키징 순서로 문서화됐다.</li>
+<h2>남은 작업</h2>
+<li>캐릭터 밸런스 미기입 항목 확정.</li>
+<li>전투 결과 설명의 납득도 플레이테스트.</li>
+<li>dirty 빌드 산출물과 release 상태 정리.</li>
+<li>Electron package metadata UTF-8/ASCII 안전화.</li>
+<section><h2>2026-09-23 운명 카드 결과 피드백</h2><ul><li>효과별 변화 영역·즉시 변화·다음 판단을 분리했다.</li><li>영문 설명과 버튼을 한국어로 교체했다.</li><li>테스트 37/37, Next.js 빌드, UI 점검 0건.</li><li>실제 보드·패키징·Drive 배포는 수행하지 않았다.</li></ul></section></body>
+</html>
+
