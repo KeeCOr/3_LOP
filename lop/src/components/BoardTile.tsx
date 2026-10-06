@@ -12,6 +12,7 @@ const BUILDING_IMG: Partial<Record<BuildingType, string[]>> = {
   vault:    ['./buildings/vault_1.png',    './buildings/vault_2.png',    './buildings/vault_3.png'],
   barracks: ['./buildings/barracks_1.png', './buildings/barracks_2.png', './buildings/barracks_3.png'],
   fort:     ['./buildings/fort_1.png',     './buildings/fort_2.png',     './buildings/fort_3.png'],
+  toll_gate:['./buildings/toll_gate_1.png','./buildings/toll_gate_2.png','./buildings/toll_gate_3.png'],
 };
 
 const CAPTURABLE_TYPES = new Set(['land']);
