@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useState } from 'react';
 import type { CharacterType, Difficulty } from '@/lib/gameTypes';
 import { CHARACTERS } from '@/lib/gameData';
@@ -58,9 +59,15 @@ export default function StartScreen({ onStart }: Props) {
       }}>
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-6">
         <header className="flex items-center justify-between">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-[0.22em] text-yellow-400">Land of Power</div>
-            <h1 className="mt-1 text-3xl font-black text-white">LOP</h1>
+          <div className="min-w-0">
+            <Image
+              src="/assets/brand/title-logo.png"
+              alt="LORD OF POLY"
+              width={1983}
+              height={793}
+              priority
+              className="h-auto w-48 max-w-full"
+            />
           </div>
           <div className="text-xs font-bold text-gray-500">v{VERSION}</div>
         </header>

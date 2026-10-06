@@ -8,6 +8,7 @@
 | 캐릭터 말 이미지 | `lop/public/player/*.png` | 시작 화면 캐릭터 공개, HUD, 말판 말 표시, 말 상세 | 보유 |
 | 건물 이미지 | `lop/public/buildings/*.png` | 타일 건물 표시, 건설 모달 | 보유 |
 | 앱 아이콘 | `lop/public/icon-192.png`, `lop/public/icon-512.png`, `icon.ico` | PWA/Electron 아이콘 | 보유 |
+| 타이틀 로고 | `lop/public/assets/brand/title-logo.png` | 시작 화면 타이틀 이미지 (`LORD OF POLY`) | 생성·연결 완료 |
 
 ## 이번에 생성한 핵심 리소스
 
