@@ -74,5 +74,6 @@
   <li>상태: 0명은 판정 중, 긴 설명은 2줄 제한, 네트워크 로딩/오류 상태 없음.</li>
 </ul>
 <p><strong>검증:</strong> 2026-09-21 테스트 32/32, Next.js 빌드, Electron 포터블 패키징, UI detector 통과. 실제 전투 화면 수동 QA는 미검증. 복수 lockfile과 package author 누락 경고가 남아 있다.</p>
-<section><h2>2026-09-23 운명 카드 결과 구조화</h2><ul><li>변화 영역·즉시 변화·다음 판단을 분리했다.</li><li>지도·세력·자원·이동·상태로 구분하며 없는 결과는 추정하지 않는다.</li><li>테스트 37/37, Next.js 빌드, UI 점검 0건.</li><li>실제 보드와 Electron 패키징은 미검증이다.</li></ul></section></body>
+<section><h2>2026-09-23 운명 카드 결과 구조화</h2><ul><li>변화 영역·즉시 변화·다음 판단을 분리했다.</li><li>지도·세력·자원·이동·상태로 구분하며 없는 결과는 추정하지 않는다.</li><li>테스트 37/37, Next.js 빌드, UI 점검 0건.</li><li>실제 보드와 Electron 패키징은 미검증이다.</li></ul></section>
+<section><h2>22. 2026-10-06 관문 자산·검증 기준점 동기화</h2><ul><li>관문은 <code>toll_gate</code> 건물로 3단계 통행세(400/800/1400)를 제공하며, 보드 타일과 건설 모달에 레벨별 관문 PNG가 런타임 연결돼 있다. 통행세 위험·면제·증세·강제 매각 흐름도 구현돼 있다.</li><li>검증: <code>node --test tests/*.test.mjs</code> 37개 테스트 통과, <code>npm run build</code> 통과(2026-10-06).</li><li>남은 수동 QA: 실제 보드에서 관문 1~3단계의 크롭·가독성, 통행세 납부 애니메이션과 패배·강제매각 전환.</li><li>알려진 경고: Next.js 복수 lockfile workspace-root 경고가 남아 있다. Electron 패키징은 이번 문서 최신화 범위에서 실행하지 않았다.</li></ul></section></body>
 </html>
