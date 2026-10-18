@@ -1,3 +1,4 @@
+import Script from "next/script";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -47,7 +48,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <PwaInit />
         {children}
-      </body>
+      <Script src="./audio/bgm-player.js" data-bgm-src="./bgm_main_loop.ogg" strategy="afterInteractive" /></body>
     </html>
   );
 }
